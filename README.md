@@ -1,0 +1,275 @@
+# ms
+
+A proposal for a set of general-purpose, open-source Go services, plus a blogging platform as the reference application that shows how they compose.
+
+Status: proposal. Nothing is implemented yet.
+
+## Motivation
+
+Most applications rebuild the same capabilities: authentication, authorization, file uploads, discussions, reactions, notifications, search, webhooks, background jobs, audit trails. These are not domain logic.
+
+Build each once, as an independent service usable by any application. The blogging platform proves the services compose into something real. It is an example, not the product.
+
+## Architectural principle
+
+Build reusable services around **capabilities**. Keep **application-specific domains** inside the application.
+
+Discussions are a capability: any application has things people talk about. Posts are a domain: only a blogging platform has posts.
+
+Every general service is resource-agnostic. It stores a reference to a resource and knows nothing about what that resource means.
+
+## Resource identity
+
+Services need one way to point at a resource owned by another service:
+
+```text
+urn:<service>:<type>:<resource-id>
+
+urn:content:post:01J8XK2P
+urn:media:image:01J8XK5Q
+urn:auth:user:01J8XK7R
+```
+
+Rules:
+
+- The ref is opaque to every service except the one named in `service`.
+- No service dereferences a foreign ref. If `discuss` needs to know a post exists, it asks `content`, and only if it must.
+- `resource-id` format is the owning service's choice: UUIDv4, UUIDv7, ULID, or something else. It must be opaque, stable, never reused, URL-safe, and contain no colon. UUIDv7 and ULID are time-sortable, which keeps index writes at the right edge and makes cursor pagination work without a second index; they also leak creation time, which UUIDv4 does not.
+- A small `ref` package provides parse, format, and validate. Services share that and nothing else.
+
+Services index on the full ref string. They may index on `(service, type)` for filtering, nothing deeper.
+
+There is no tenant segment. Multi-tenancy is out of scope. It would arrive as a new segment, which is a breaking change: the field count shifts, so parsers detect it, but every stored ref has to be rewritten, including refs held in other services' tables.
+
+`service` sits in the slot RFC 8141 expects to hold a namespace registered with IANA. Unregistered namespaces are common practice, but these are generic words, so the refs are only safe to mix with URNs from other systems once a project segment is added.
+
+## Deployment shapes
+
+Every service runs two ways from the same code.
+
+**Standalone.** Own process, own storage, a transport in front of it, events out.
+
+**Embedded.** Imported as a Go module into one binary. Calls go in-process.
+
+This is what keeps a blog from being overkill. One binary with SQLite and an in-process bus, no external dependency at all, is a valid deployment. So is ten services on Kubernetes with a different database engine behind each. Same code.
+
+### Layering
+
+```text
+main.go            dependency injection, wiring, config
+   │
+http / grpc / cli  transport adapters
+   │
+service            business logic, the only layer that matters
+   │
+repository, clients, storage, bus
+```
+
+The service layer holds the logic and depends only on interfaces. Everything above and below is an adapter chosen in `main.go`.
+
+### API
+
+The service interface is the contract. Transport layers are optional adapters over it, and a service ships with none by default.
+
+When one is needed, REST is preferred, with an OpenAPI document alongside it. gRPC is available where it fits. Other languages consume whichever a given service exposes.
+
+### Service-to-service calls
+
+A service that needs another declares a Go interface of what it needs, nothing more.
+
+```go
+type Content interface {
+    GetPost(ctx context.Context, ref string) (*Post, error)
+}
+```
+
+Two implementations:
+
+- **Direct.** Wraps the other service's own service layer. In-process call.
+- **Remote.** HTTP or gRPC client. Owns timeouts, retries, circuit breaking, auth, tracing.
+
+`main.go` picks. The calling service never knows which it got, and never changes when the answer changes.
+
+### Events
+
+The event bus is an interface, like storage. A service publishes and subscribes; it never knows what is behind it.
+
+The single binary uses an in-process implementation. A split deployment uses whatever the developer wires in: NATS, Kafka, Redis Streams, a Postgres outbox, something else. No transport is privileged, and none is required.
+
+Delivery guarantees differ between implementations, so consumers are written to be idempotent and to tolerate redelivery and reordering.
+
+### Storage
+
+Each service owns its tables. Where those tables live is a wiring decision: one database, one database per service, separate schemas, whatever the operator chooses.
+
+Nothing in the code enforces the boundary. A repository implementation handed the same connection as another service can join across it. That is the operator's decision and the operator's consequence. The services do not do it, and the split stays possible for anyone who did not.
+
+Cross-service transactions are not supported.
+
+Backends are not equivalent, and the design does not pretend otherwise. A backend may support only part of a service's API, or support it with different quality: SQLite gives simpler search than Postgres full text, which is weaker again than a dedicated engine; cursor pagination, ordering, and aggregate behaviour vary the same way. Each service documents what each of its backends supports, and choosing a backend is choosing that set of features.
+
+## General services
+
+### auth
+
+OAuth2 and OIDC provider. Owns identity: users, service accounts, sessions, anonymous visitors.
+
+Hybrid service. The protocol surface is `/authorize`, `/token`, `/userinfo`, and JWKS. It also renders the pages that cannot be anything but pages: login, register, consent, password reset, MFA challenge. Those handle credentials in the browser, so the consuming application must never render them.
+
+Everything else is plain API. Account management, profile, and session listing are endpoints the application renders itself.
+
+Two credential shapes:
+
+- **JWT** for API clients. Standard claims, signed, verified locally against JWKS. No call to `auth` per request.
+- **Opaque session id** for browser sessions and SSR. Verified with `auth`, which owns session state.
+
+Both must be revocable, for logout and for ban. A session id is revoked by deleting it, and takes effect immediately. A JWT cannot be, because nothing checks with `auth` when it is verified. So access tokens are short-lived and revocation happens at refresh, which leaves a window equal to the token lifetime. Where that window is unacceptable, `auth` publishes a revocation event and verifiers keep a local denylist until the token would have expired anyway.
+
+### authz
+
+Answers one question: can subject X perform action Y on resource Z?
+
+- RBAC (roles and permissions)
+- ACL (direct subject-to-resource grants)
+- Groups of subjects
+- Fine-grained policies for what neither covers
+
+A subject is an opaque ref. `authz` never resolves it and stores nothing about it. `auth` decides who you are; `authz` decides what that subject may do.
+
+Organizations are out of scope. Whether they land here or in `auth` is deferred until something needs them.
+
+### media
+
+Upload and download over an object storage abstraction, so the backend (S3, GCS, local disk) is a deployment choice.
+
+- Image resizing, compression, format conversion
+- Metadata extraction
+- Malware scanning on upload
+- Signed URLs
+
+### discuss
+
+Threaded discussion attached to any resource. The largest of the general services.
+
+- Replies and arbitrary nesting, with a depth limit
+- Edit history, soft delete, tombstones that keep a thread readable
+- Moderation: queue, flags, spam signals, per-thread locks
+- Mentions, which emit events for `notify`
+- Sort and pagination over trees, not just lists
+
+### react
+
+Reactions attached to any resource: likes, dislikes, emoji, bookmarks, ratings. The set of allowed reactions is configuration. Provides aggregate counts and per-subject state.
+
+Deliberately small. It is a counter with rules. Keeping it separate from `discuss` keeps it fast and cacheable.
+
+### notify
+
+Delivery across email, push, SMS, and in-app.
+
+- Templates with per-channel rendering
+- Per-user channel preferences and opt-outs
+- Retries, rate limiting, delivery status
+
+### search
+
+Generic indexing and query API. Search knows no domain shape.
+
+A service gets its documents into an index either way: it pushes them, or `search` subscribes to its events and builds the index itself. Push is explicit and immediate. Subscribing keeps the indexed service unaware that `search` exists. Both are supported, per service.
+
+### hooks
+
+Outbound event subscriptions for third parties. Subscription management, delivery with backoff, request signing, delivery history and replay.
+
+### jobs
+
+Async execution for the other services. Retries with backoff, delayed and scheduled jobs, dead-letter queues.
+
+### audit
+
+Immutable append-only record of important actions. Generic actor, action, resource, context. Queryable on any dimension.
+
+## Blogging-specific services
+
+### content
+
+Owns the blogging domain: posts, drafts, revisions, tags, categories, publishing and scheduling. It does not own the website UI.
+
+### web
+
+Owns the public website and all server-side rendering. Holds no domain data. Composes `content` and the general services into pages.
+
+## Example request
+
+```text
+Browser
+   │ GET /p/post-1
+   ▼
+web
+   ├── content
+   ├── discuss
+   ├── react
+   └── media
+   │
+   ▼
+SSR HTML
+   │
+   ▼
+Browser
+```
+
+Prefer events over synchronous fan-out. A page render should not call five services on every hit. `web` keeps a read model updated by events and calls directly only where freshness matters.
+
+## OAuth flow
+
+`auth` owns its own browser UI. `web` never sees a password.
+
+```text
+Browser
+   │
+   ▼
+web
+   │ redirect
+   ▼
+auth
+   ├── /authorize
+   ├── /login       ← SSR
+   ├── /consent     ← SSR
+   ├── /token       ← protocol/API
+   └── /userinfo
+   │
+   ▼
+web callback
+```
+
+## Replaceability
+
+A service here can be swapped for an existing product. `auth` for Keycloak, Ory Hydra, Zitadel, or Auth0; `authz` for OpenFGA, Ory Keto, SpiceDB, or Cedar. The consumer keeps its interface and gets a different implementation behind it.
+
+For `auth`, most of it needs no adapter at all: consumers speak OIDC, so they point at another issuer and stop caring. Only the parts OIDC does not define need one, which is service accounts, session listing, and account management.
+
+Two rules keep this possible, and both cost nothing now:
+
+- A dependency interface describes the capability, never our endpoints or our tables.
+- `authz` gets no policy language of its own. Nothing external would be able to express it.
+
+Two things do not survive the swap. An external service is always a network call, so it cannot be embedded in the single binary. And external identity providers are unreliable event sources, so cleanup that depends on hearing `user.deleted` must be reconcilable, not event-only.
+
+## Service contract
+
+- Each service owns its tables and reads no one else's, whatever database they sit in.
+- Business logic lives in the service layer and depends only on interfaces.
+- Transport, storage, and clients are adapters wired in `main.go`.
+- A dependency on another service is a narrow Go interface, with a direct and a remote implementation.
+- Foreign resources are refs, never dereferenced.
+- Authorization goes to `authz`. Never reimplemented locally.
+- Health, readiness, metrics, structured logs on every service.
+- Standard library first. A dependency needs a reason.
+
+## Repository layout
+
+One folder per service in this repository, one Go module for all of them while the contracts are unstable. A service moves to its own module and its own repository once its API stops changing. That move changes its import path, which breaks anyone importing it, so it happens before the first tagged release.
+
+## License
+
+Apache-2.0. Free for commercial and closed-source use, with an explicit patent grant.
