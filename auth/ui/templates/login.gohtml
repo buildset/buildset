@@ -1,0 +1,9 @@
+{{ define "content" }}
+<form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ .Next }}">
+    <p><label>Username <input name="username" value="{{ .Username }}" required autofocus autocomplete="username"></label></p>
+    <p><label>Password <input name="password" type="password" required autocomplete="current-password"></label></p>
+    <p><button type="submit">Sign in</button></p>
+</form>
+{{ if .RegistrationOpen }}<p><a href="/register">Create an account</a></p>{{ end }}
+{{ end }}

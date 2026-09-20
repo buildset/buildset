@@ -1,0 +1,14 @@
+{{ define "content" }}
+{{ if .Posts }}
+    <ul>
+        {{ range .Posts }}
+            <li>
+                <a href="/posts/{{ .ID }}">{{ .Title }}</a>
+                {{ with .PublishedAt }}<time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 January 2006" }}</time>{{ end }}
+            </li>
+        {{ end }}
+    </ul>
+{{ else }}
+    <p>Nothing has been published yet.</p>
+{{ end }}
+{{ end }}

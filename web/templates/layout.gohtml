@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ .Title }}</title>
+</head>
+<body>
+<header>
+    <p><a href="/">{{ .SiteTitle }}</a></p>
+    <nav>
+        {{ if .CurrentUser }}
+            <span>Signed in as {{ with .CurrentUser.Name }}{{ . }}{{ else }}{{ .CurrentUser.Username }}{{ end }}</span>
+            {{ if .CanSeeAdmin }}<a href="/admin">Admin</a>{{ end }}
+            <a href="/account">Account</a>
+            <a href="{{ .PasswordURL }}">Password</a>
+            <form method="post" action="{{ .LogoutURL }}"><button type="submit">Sign out</button></form>
+        {{ else }}
+            <a href="{{ .LoginURL }}">Sign in</a>
+        {{ end }}
+    </nav>
+</header>
+<main>
+    <h1>{{ .Title }}</h1>
+    {{ if .ErrorMessage }}<p role="alert"><strong>{{ .ErrorMessage }}</strong></p>{{ end }}
+    {{ if .Notice }}<p role="status">{{ .Notice }}</p>{{ end }}
+    {{ template "content" .Content }}
+</main>
+</body>
+</html>

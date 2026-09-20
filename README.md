@@ -2,7 +2,36 @@
 
 A proposal for a set of general-purpose, open-source Go services, plus a blogging platform as the reference application that shows how they compose.
 
-Status: proposal. Nothing is implemented yet.
+Status: the blogging platform runs as a single binary. Four services are implemented as a modular monolith: `auth`, `authz`, `content`, and `web`. The remaining general services are still a proposal.
+
+## Running it
+
+```sh
+cp .env.example .env   # optional, every setting has a default
+make run               # builds bin/blog and starts it
+```
+
+Open `http://localhost:8080`. With no accounts yet you are sent to `/setup`, and the account you create there becomes the administrator. Data lands in a SQLite file, `ms.db` by default.
+
+`make build` writes `bin/blog`. `make format` formats and tidies, `make lint` checks formatting and runs `go vet`, `make test` runs every test.
+
+The end-to-end tests drive a real browser and need Playwright's Chromium once:
+
+```sh
+go run github.com/playwright-community/playwright-go/cmd/playwright@v0.6000.0 install chromium
+```
+
+Without it those tests skip and everything else still runs. `E2E_INSTALL_BROWSER=1 make test` downloads it during the run instead, which is convenient once and a slow surprise every time after, so it is off by default.
+
+That version of the installer still points at a retired download host. Set `PLAYWRIGHT_DOWNLOAD_HOST` to a working one, for example `https://registry.npmmirror.com/-/binary/playwright`.
+
+### What the first cut does
+
+Username and password sign-in, RBAC with `admin`, `author`, and `reader`, posts that move between draft, published, and archived, plain-text bodies rendered to HTML, and server-rendered pages with no JavaScript.
+
+Administrators add and remove accounts and assign roles. Authors write their own posts and hold rights only over the posts they created. Everyone can edit their own name, username, and password.
+
+There is no API, no comments, no tags, no scheduling, and no pagination yet.
 
 ## Motivation
 

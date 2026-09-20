@@ -1,0 +1,26 @@
+{{ define "content" }}
+<p>Username: {{ .User.Username }}</p>
+<p>Name: {{ .User.Name }}</p>
+{{ if .IsSelf }}<p>This is your own account.</p>{{ end }}
+
+{{ if .CanAssign }}
+    <form method="post" action="/admin/users/{{ .User.ID }}/roles">
+        {{ $held := .HeldRoles }}
+        {{ range .AllRoles }}
+            <p><label>
+                <input type="checkbox" name="roles" value="{{ . }}" {{ if has $held . }}checked{{ end }}>
+                {{ . }}
+            </label></p>
+        {{ end }}
+        <p><button type="submit">Save roles</button></p>
+    </form>
+{{ else }}
+    <p>Roles: {{ range .HeldRoles }}{{ . }} {{ else }}none{{ end }}</p>
+{{ end }}
+{{ if .CanDelete }}
+    <form method="post" action="/admin/users/{{ .User.ID }}/delete">
+        <button type="submit">Delete this account</button>
+    </form>
+{{ end }}
+<p><a href="/admin/users">Back to users</a></p>
+{{ end }}

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ .Title }}</title>
+</head>
+<body>
+<h1>{{ .Title }}</h1>
+{{ if .ErrorMessage }}<p role="alert"><strong>{{ .ErrorMessage }}</strong></p>{{ end }}
+{{ if .Notice }}<p role="status">{{ .Notice }}</p>{{ end }}
+{{ template "content" . }}
+<p><a href="/">Back to the blog</a></p>
+</body>
+</html>

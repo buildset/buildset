@@ -1,0 +1,7 @@
+{{ define "content" }}
+<article>
+    {{ with .Post.PublishedAt }}<p><time datetime="{{ .Format "2006-01-02" }}">{{ .Format "2 January 2006" }}</time></p>{{ end }}
+    {{ if ne .Post.Status "published" }}<p><em>This post is a {{ .Post.Status }}.</em></p>{{ end }}
+    {{ .Body }}
+</article>
+{{ end }}

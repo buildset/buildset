@@ -1,0 +1,6 @@
+{{ define "content" }}
+<ul>
+    {{ if .CanManagePosts }}<li><a href="/admin/posts">Posts</a></li>{{ end }}
+    {{ if .CanManageUsers }}<li><a href="/admin/users">Users</a></li>{{ end }}
+</ul>
+{{ end }}

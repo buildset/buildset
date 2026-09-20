@@ -1,0 +1,21 @@
+{{ define "content" }}
+<form method="post" action="{{ if .Editing }}/admin/posts/{{ .Post.ID }}{{ else }}/admin/posts{{ end }}">
+    <p><label>Title <input name="title" value="{{ .Post.Title }}" required autofocus maxlength="200"></label></p>
+    <p><label>Body <textarea name="body" rows="20" cols="80">{{ .Post.Body }}</textarea></label></p>
+    <p>Plain text. A blank line starts a new paragraph.</p>
+    <p><button type="submit">{{ if .Editing }}Save{{ else }}Create draft{{ end }}</button></p>
+</form>
+
+{{ if .Editing }}
+    <p>Status: {{ .Post.Status }}</p>
+    {{ range .Statuses }}
+        <form method="post" action="/admin/posts/{{ $.Post.ID }}/status">
+            <input type="hidden" name="status" value="{{ . }}">
+            <button type="submit">Move to {{ . }}</button>
+        </form>
+    {{ end }}
+    <form method="post" action="/admin/posts/{{ .Post.ID }}/delete">
+        <button type="submit">Delete this post</button>
+    </form>
+{{ end }}
+{{ end }}

@@ -1,0 +1,14 @@
+{{ define "content" }}
+<form method="post" action="/register">
+    <p><label>Username <input name="username" value="{{ .Username }}" required autofocus autocomplete="username"></label></p>
+    <p><label>Display name <input name="name" value="{{ .Name }}" autocomplete="name"></label></p>
+    <p><label>Password <input name="password" type="password" required autocomplete="new-password"></label></p>
+    <p><button type="submit">{{ if .ForSomeoneElse }}Add user{{ else }}Create account{{ end }}</button></p>
+</form>
+{{ if .ForSomeoneElse }}
+    <p>The person will need this password to sign in. They can change it afterwards.</p>
+    <p><a href="/admin/users">Back to users</a></p>
+{{ else }}
+    <p><a href="/login">Sign in instead</a></p>
+{{ end }}
+{{ end }}

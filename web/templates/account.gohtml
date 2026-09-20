@@ -1,0 +1,8 @@
+{{ define "content" }}
+<form method="post" action="/account">
+    <p><label>Username <input name="username" value="{{ .User.Username }}" required autocomplete="username"></label></p>
+    <p><label>Display name <input name="name" value="{{ .User.Name }}" autocomplete="name"></label></p>
+    <p><button type="submit">Save</button></p>
+</form>
+<p><a href="{{ .PasswordURL }}">Change your password</a></p>
+{{ end }}

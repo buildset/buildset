@@ -1,0 +1,21 @@
+{{ define "content" }}
+<p><a href="/admin/posts/new">Write a new post</a></p>
+{{ if not .ShowingEveryone }}<p>These are your own posts.</p>{{ end }}
+{{ if .Posts }}
+    <table>
+        <thead><tr><th>Title</th><th>Status</th><th>Created</th><th></th></tr></thead>
+        <tbody>
+        {{ range .Posts }}
+            <tr>
+                <td><a href="/posts/{{ .ID }}">{{ .Title }}</a></td>
+                <td>{{ .Status }}</td>
+                <td><time datetime="{{ .CreatedAt.Format "2006-01-02" }}">{{ .CreatedAt.Format "2 January 2006" }}</time></td>
+                <td><a href="/admin/posts/{{ .ID }}/edit">Edit</a></td>
+            </tr>
+        {{ end }}
+        </tbody>
+    </table>
+{{ else }}
+    <p>There are no posts yet.</p>
+{{ end }}
+{{ end }}
