@@ -81,7 +81,10 @@ func newHarness(t *testing.T) *harness {
 		// The test server speaks plain HTTP, so a Secure cookie would never come back.
 		SecureCookies: false,
 		SiteTitle:     "Test Blog",
-		Database:      app.DatabaseConfig{Path: filepath.Join(t.TempDir(), "test.db")},
+		Database: app.DatabaseConfig{
+			Driver: app.DriverSQLite,
+			Path:   filepath.Join(t.TempDir(), "test.db"),
+		},
 		Auth: app.AuthConfig{
 			// The lowest cost bcrypt accepts, because these tests sign in repeatedly.
 			BcryptCost:       10,

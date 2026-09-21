@@ -8,10 +8,13 @@ import (
 
 	"github.com/buildset/buildset/auth"
 	"github.com/buildset/buildset/auth/hash"
+	authpostgres "github.com/buildset/buildset/auth/postgres"
 	authsqlite "github.com/buildset/buildset/auth/sqlite"
 	"github.com/buildset/buildset/authz"
+	authzpostgres "github.com/buildset/buildset/authz/postgres"
 	authzsqlite "github.com/buildset/buildset/authz/sqlite"
 	"github.com/buildset/buildset/content"
+	contentpostgres "github.com/buildset/buildset/content/postgres"
 	contentsqlite "github.com/buildset/buildset/content/sqlite"
 )
 
@@ -27,7 +30,7 @@ type services struct {
 	content *content.Service
 }
 
-func newServices(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logger) (*services, error) {
+func newServices(ctx context.Context, cfg *Config, stores *Stores, logger *slog.Logger) (*services, error) {
 	bcryptAlgorithm, err := hash.NewBcrypt(cfg.Auth.BcryptCost)
 	if err != nil {
 		return nil, fmt.Errorf("build bcrypt algorithm: %w", err)
@@ -40,12 +43,12 @@ func newServices(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logg
 		return nil, fmt.Errorf("build password registry: %w", err)
 	}
 
-	authRepository, err := authsqlite.NewRepository(ctx, db)
+	authRepository, err := newAuthRepository(ctx, cfg.Database.Driver, stores.Auth)
 	if err != nil {
 		return nil, fmt.Errorf("build auth repository: %w", err)
 	}
 
-	authzRepository, err := authzsqlite.NewRepository(ctx, db)
+	authzRepository, err := newAuthzRepository(ctx, cfg.Database.Driver, stores.Authz)
 	if err != nil {
 		return nil, fmt.Errorf("build authz repository: %w", err)
 	}
@@ -69,7 +72,7 @@ func newServices(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logg
 		return nil, fmt.Errorf("build auth service: %w", err)
 	}
 
-	contentRepository, err := contentsqlite.NewRepository(ctx, db)
+	contentRepository, err := newContentRepository(ctx, cfg.Database.Driver, stores.Content)
 	if err != nil {
 		return nil, fmt.Errorf("build content repository: %w", err)
 	}
@@ -79,4 +82,31 @@ func newServices(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logg
 		authz:   authzService,
 		content: content.NewService(contentRepository),
 	}, nil
+}
+
+// The three factories below are the only places that name a storage backend. Each service is
+// handed a Repository and never learns which one it got.
+
+func newAuthRepository(ctx context.Context, driver string, db *sql.DB) (auth.Repository, error) {
+	if driver == DriverPostgres {
+		return authpostgres.NewRepository(ctx, db)
+	}
+
+	return authsqlite.NewRepository(ctx, db)
+}
+
+func newAuthzRepository(ctx context.Context, driver string, db *sql.DB) (authz.Repository, error) {
+	if driver == DriverPostgres {
+		return authzpostgres.NewRepository(ctx, db)
+	}
+
+	return authzsqlite.NewRepository(ctx, db)
+}
+
+func newContentRepository(ctx context.Context, driver string, db *sql.DB) (content.Repository, error) {
+	if driver == DriverPostgres {
+		return contentpostgres.NewRepository(ctx, db)
+	}
+
+	return contentsqlite.NewRepository(ctx, db)
 }

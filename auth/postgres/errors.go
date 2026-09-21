@@ -1,0 +1,26 @@
+package postgres
+
+import "errors"
+
+// sqlStater is implemented by the driver's error type. Matching the method rather than the
+// concrete type keeps the driver out of this package's imports, the same way the service layer
+// keeps storage out of its own.
+type sqlStater interface {
+	SQLState() string
+}
+
+func sqlState(err error) string {
+	var stater sqlStater
+	if errors.As(err, &stater) {
+		return stater.SQLState()
+	}
+
+	return ""
+}
+
+// https://www.postgresql.org/docs/current/errcodes-appendix.html
+const uniqueViolation = "23505"
+
+func isUniqueViolation(err error) bool {
+	return sqlState(err) == uniqueViolation
+}
