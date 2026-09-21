@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/buildset/buildset/pkg/serve"
 )
 
 // expiredSessionSweepInterval is how often sessions past their expiry are removed. Expiry is
@@ -20,7 +21,7 @@ type Application struct {
 	logger   *slog.Logger
 	stores   *Stores
 	services *services
-	handler  http.Handler
+	routes   http.Handler
 }
 
 func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Application, error) {
@@ -36,18 +37,32 @@ func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Application, e
 		return nil, fmt.Errorf("build services: %w", err)
 	}
 
-	handler, err := NewHandler(cfg, stores, svc, logger)
+	routes, err := Routes(cfg, svc, logger)
 	if err != nil {
 		stores.Close()
 
 		return nil, fmt.Errorf("build http handler: %w", err)
 	}
 
-	return &Application{config: cfg, logger: logger, stores: stores, services: svc, handler: handler}, nil
+	return &Application{config: cfg, logger: logger, stores: stores, services: svc, routes: routes}, nil
 }
 
+// Handler is the fully wrapped handler this binary serves, health probes and middleware included.
 func (a *Application) Handler() http.Handler {
-	return a.handler
+	return serve.Handler(a.serveOptions())
+}
+
+func (a *Application) serveOptions() serve.Options {
+	return serve.Options{
+		Name:            "blog",
+		Address:         a.config.Address(),
+		ShutdownTimeout: a.config.ShutdownTimeout,
+		Logger:          a.logger,
+		Routes:          a.routes,
+		Ready:           a.stores.Ping,
+		CrossOrigin:     true,
+		Background:      []func(context.Context){a.SweepExpiredSessions},
+	}
 }
 
 func (a *Application) Close() error {
@@ -84,7 +99,7 @@ func Run(ctx context.Context) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	logger := NewLogger(cfg)
+	logger := serve.NewLogger(serve.LogConfig{Level: cfg.LogLevel, JSON: cfg.LogJSON})
 	slog.SetDefault(logger)
 
 	application, err := New(ctx, cfg, logger)
@@ -93,46 +108,5 @@ func Run(ctx context.Context) error {
 	}
 	defer application.Close()
 
-	go application.SweepExpiredSessions(ctx)
-
-	server := &http.Server{
-		Addr:              cfg.Address(),
-		Handler:           application.Handler(),
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       2 * time.Minute,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelWarn),
-	}
-
-	errs := make(chan error, 1)
-
-	go func() {
-		logger.Info("http server listening", slog.String("address", cfg.Address()))
-
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errs <- fmt.Errorf("listen and serve: %w", err)
-
-			return
-		}
-
-		errs <- nil
-	}()
-
-	select {
-	case err := <-errs:
-		return err
-	case <-ctx.Done():
-		logger.Info("shutdown signal received")
-	}
-
-	// The shutdown deadline must survive the cancelled context that triggered it.
-	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cfg.ShutdownTimeout)
-	defer cancel()
-
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("shutdown http server: %w", err)
-	}
-
-	return <-errs
+	return serve.Run(ctx, application.serveOptions())
 }

@@ -5,13 +5,13 @@ package pgtest
 import (
 	"database/sql"
 	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/nasermirzaei89/env"
 )
 
 // DSNEnvVar points at a database these tests may create and drop schemas in. Without it they skip,
@@ -24,7 +24,7 @@ var schemaNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 func DSN(t *testing.T) string {
 	t.Helper()
 
-	dsn := os.Getenv(DSNEnvVar)
+	dsn := env.GetString(DSNEnvVar, "")
 	if dsn == "" {
 		t.Skipf("set %s to run the postgres tests", DSNEnvVar)
 	}

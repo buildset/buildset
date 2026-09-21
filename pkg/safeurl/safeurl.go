@@ -1,13 +1,18 @@
-package ui
+// Package safeurl keeps a redirect target inside this site.
+//
+// It is shared rather than duplicated because both sides of an identity split depend on it: the
+// service that builds the ?next= link and the service that acts on it must agree exactly, or the
+// same-origin guarantee holds in one binary and not the other.
+package safeurl
 
 import (
 	"net/url"
 	"strings"
 )
 
-// safeNext keeps the post-login redirect inside this site. Anything that could send the browser to
+// Next keeps the post-login redirect inside this site. Anything that could send the browser to
 // another origin, or that a browser might normalize into doing so, collapses to the home page.
-func safeNext(raw string) string {
+func Next(raw string) string {
 	const fallback = "/"
 
 	if raw == "" || !strings.HasPrefix(raw, "/") {

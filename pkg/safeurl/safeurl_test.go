@@ -1,4 +1,4 @@
-package ui
+package safeurl
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ func TestSafeNext(t *testing.T) {
 		"/posts/0199bf3c-7a1e-7c2b-9f10-3d4a5b6c7d8e",
 	}
 	for _, raw := range kept {
-		assert.Equal(t, raw, safeNext(raw), raw)
+		assert.Equal(t, raw, Next(raw), raw)
 	}
 
 	rejected := []string{
@@ -37,6 +37,6 @@ func TestSafeNext(t *testing.T) {
 		"//user@evil.example",
 	}
 	for _, raw := range rejected {
-		assert.Equal(t, "/", safeNext(raw), "%q must not survive", raw)
+		assert.Equal(t, "/", Next(raw), "%q must not survive", raw)
 	}
 }

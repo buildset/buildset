@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+
+	"github.com/buildset/buildset/content/render"
 )
 
 const (
@@ -16,11 +18,12 @@ const (
 )
 
 var (
-	ErrPostNotFound       = errors.New("post not found")
-	ErrInvalidPost        = errors.New("invalid post")
-	ErrInvalidStatus      = errors.New("invalid post status")
-	ErrInvalidTransition  = errors.New("invalid status transition")
-	ErrUnsupportedContent = errors.New("unsupported content type")
+	ErrPostNotFound      = errors.New("post not found")
+	ErrInvalidPost       = errors.New("invalid post")
+	ErrInvalidStatus     = errors.New("invalid post status")
+	ErrInvalidTransition = errors.New("invalid status transition")
+	// ErrUnsupportedContent is raised by the renderer, which owns the list of formats.
+	ErrUnsupportedContent = render.ErrUnsupportedContent
 )
 
 type Status string
@@ -60,11 +63,11 @@ func canTransition(from, to Status) bool {
 }
 
 // ContentTypePlainText is the only body format supported today.
-const ContentTypePlainText = "text/plain"
+const ContentTypePlainText = render.ContentTypePlainText
 
 func validateContentType(contentType string) error {
-	if contentType != ContentTypePlainText {
-		return fmt.Errorf("%w: %q", ErrUnsupportedContent, contentType)
+	if err := render.ValidateContentType(contentType); err != nil {
+		return err
 	}
 
 	return nil
