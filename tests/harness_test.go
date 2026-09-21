@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/buildset/buildset/app"
+	"github.com/nasermirzaei89/env"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )
@@ -41,7 +42,7 @@ func startPlaywright() (*playwright.Playwright, error) {
 		return pw, nil
 	}
 
-	if os.Getenv(installBrowserEnvVar) == "" {
+	if !env.GetBool(installBrowserEnvVar, false) {
 		return nil, fmt.Errorf("%w (set %s=1 to download it, or install it beforehand, see the README)", err, installBrowserEnvVar)
 	}
 

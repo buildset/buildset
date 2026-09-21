@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 
+	"github.com/buildset/buildset/pkg/action"
 	"github.com/buildset/buildset/pkg/ref"
 )
 
@@ -15,7 +16,7 @@ const (
 	ActionPostDelete  = "post.delete"
 	ActionPostPublish = "post.publish"
 	ActionUserRead    = "user.read"
-	ActionUserCreate  = "user.create"
+	ActionUserCreate  = action.UserCreate
 	ActionUserDelete  = "user.delete"
 	ActionRoleAssign  = "role.assign"
 )
@@ -33,7 +34,7 @@ const (
 	anyPostResource = "urn:content:post:*"
 	// AnyUserResource is exported because the composition root asks the same question when it
 	// decides who may reach the registration form.
-	AnyUserResource = "urn:auth:user:*"
+	AnyUserResource = action.AnyUser
 	anyUserResource = AnyUserResource
 )
 

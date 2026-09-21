@@ -1,4 +1,4 @@
-package app
+package serve
 
 import (
 	"context"
@@ -7,17 +7,24 @@ import (
 	"time"
 
 	"github.com/SladkyCitron/slogcolor"
+	"github.com/buildset/buildset/pkg/reqid"
 )
 
-func NewLogger(cfg *Config) *slog.Logger {
-	opts := &slog.HandlerOptions{Level: cfg.LogLevel}
+// LogConfig is how a binary wants its logs written.
+type LogConfig struct {
+	Level slog.Level
+	JSON  bool
+}
+
+func NewLogger(cfg LogConfig) *slog.Logger {
+	opts := &slog.HandlerOptions{Level: cfg.Level}
 
 	var handler slog.Handler
-	if cfg.LogJSON {
+	if cfg.JSON {
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	} else {
 		handler = slogcolor.NewHandler(os.Stdout, &slogcolor.Options{
-			Level:      cfg.LogLevel,
+			Level:      cfg.Level,
 			TimeFormat: time.RFC3339,
 			// Colour is an escape sequence that means nothing in a file or a log collector, so it
 			// is only used when the output is a terminal.
@@ -36,7 +43,7 @@ type requestIDHandler struct {
 }
 
 func (h requestIDHandler) Handle(ctx context.Context, record slog.Record) error {
-	if id, ok := requestIDFromContext(ctx); ok {
+	if id, ok := reqid.FromContext(ctx); ok {
 		record.AddAttrs(slog.String("request_id", id))
 	}
 

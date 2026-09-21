@@ -5,33 +5,18 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
 	authui "github.com/buildset/buildset/auth/ui"
 	"github.com/buildset/buildset/web"
 )
 
-// NewHandler builds the root mux. Service handlers are mounted here and nowhere else, which keeps
+// Routes builds the root mux. Service handlers are mounted here and nowhere else, which keeps
 // every service unaware that the others are served from the same process.
-func NewHandler(cfg *Config, stores *Stores, svc *services, logger *slog.Logger) (http.Handler, error) {
+//
+// The health probes and the middleware chain are not here: pkg/serve owns those, so this binary
+// and the four split ones answer them identically.
+func Routes(cfg *Config, svc *services, logger *slog.Logger) (http.Handler, error) {
 	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		writePlain(w, http.StatusOK, "ok")
-	})
-
-	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
-		defer cancel()
-
-		if err := stores.Ping(ctx); err != nil {
-			writePlain(w, http.StatusServiceUnavailable, "database unavailable")
-
-			return
-		}
-
-		writePlain(w, http.StatusOK, "ready")
-	})
 
 	// Who may create an account is an authorization question, so it is answered here rather than
 	// inside auth. Public sign-up is a configuration switch; otherwise it takes a permission.
@@ -73,20 +58,5 @@ func NewHandler(cfg *Config, stores *Stores, svc *services, logger *slog.Logger)
 	// The site takes every path the routes above did not claim.
 	mux.Handle("/", site.Handler())
 
-	// Rejects cross-origin state-changing requests using Sec-Fetch-Site, falling back to Origin.
-	// TODO: requests carrying neither header are allowed through. Combined with SameSite=Lax that
-	// leaves only pre-2023 browsers exposed; add session-bound form tokens if those must be supported.
-	handler := http.NewCrossOriginProtection().Handler(mux)
-
-	// Request tagging, logging, and panic recovery sit here rather than inside each service,
-	// because they are a property of this process. A service split into its own binary adds them
-	// in its own main. The identifier is applied first so everything below can log it.
-	return withRequestID(recoverPanics(logger, logRequests(logger, handler))), nil
-}
-
-func writePlain(w http.ResponseWriter, status int, body string) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(status)
-	w.Write([]byte(body))
+	return mux, nil
 }

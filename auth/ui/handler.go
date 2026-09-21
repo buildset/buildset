@@ -13,6 +13,7 @@ import (
 	"net/url"
 
 	"github.com/buildset/buildset/auth"
+	"github.com/buildset/buildset/pkg/safeurl"
 )
 
 // maxFormBytes caps a form submission. These forms are a handful of short fields.
@@ -65,7 +66,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 // LoginURL is the seam that keeps the rest of the system out of auth's routing. Today it points at
 // the page below; an OAuth2 authorization endpoint would be returned from here instead.
 func (h *Handler) LoginURL(next string) string {
-	target := safeNext(next)
+	target := safeurl.Next(next)
 	if target == "/" {
 		return "/login"
 	}

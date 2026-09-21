@@ -6,10 +6,11 @@ import (
 	"net/http"
 
 	"github.com/buildset/buildset/auth"
+	"github.com/buildset/buildset/pkg/safeurl"
 )
 
 func (h *Handler) loginForm(w http.ResponseWriter, r *http.Request) {
-	next := safeNext(r.URL.Query().Get("next"))
+	next := safeurl.Next(r.URL.Query().Get("next"))
 
 	if _, _, err := h.currentSession(r); err == nil {
 		http.Redirect(w, r, next, http.StatusSeeOther)
@@ -31,7 +32,7 @@ func (h *Handler) loginSubmit(w http.ResponseWriter, r *http.Request) {
 
 	var (
 		username = r.PostFormValue("username")
-		next     = safeNext(r.PostFormValue("next"))
+		next     = safeurl.Next(r.PostFormValue("next"))
 	)
 
 	user, err := h.service.Authenticate(r.Context(), username, r.PostFormValue("password"))
