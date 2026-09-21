@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -14,7 +13,7 @@ import (
 
 // NewHandler builds the root mux. Service handlers are mounted here and nowhere else, which keeps
 // every service unaware that the others are served from the same process.
-func NewHandler(cfg *Config, db *sql.DB, svc *services, logger *slog.Logger) (http.Handler, error) {
+func NewHandler(cfg *Config, stores *Stores, svc *services, logger *slog.Logger) (http.Handler, error) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +24,7 @@ func NewHandler(cfg *Config, db *sql.DB, svc *services, logger *slog.Logger) (ht
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 
-		if err := db.PingContext(ctx); err != nil {
+		if err := stores.Ping(ctx); err != nil {
 			writePlain(w, http.StatusServiceUnavailable, "database unavailable")
 
 			return

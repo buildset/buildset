@@ -1,6 +1,10 @@
 // Package sqlmigrate applies numbered SQL migration files from an fs.FS and records what it
 // applied. Each storage backend owns its own files and its own bookkeeping table, so no two
 // services ever write the same table.
+//
+// A file is applied inside one transaction together with its bookkeeping row, so a failure leaves
+// nothing half-applied. That also means a statement which cannot run in a transaction, such as
+// CREATE INDEX CONCURRENTLY, can never appear in a migration file.
 package sqlmigrate
 
 import (
@@ -36,6 +40,24 @@ type Runner struct {
 	Directory string
 	// TableName is where this backend records what it applied. It must be unique per service.
 	TableName string
+	// Dialect adapts the bookkeeping to the engine. Nil means SQLite.
+	Dialect Dialect
+}
+
+func (r Runner) dialect() Dialect {
+	if r.Dialect == nil {
+		return SQLite{}
+	}
+
+	return r.Dialect
+}
+
+// queryer is the part of *sql.DB that this package uses, so the same code runs against a pool or
+// against the single connection Up pins for the duration of a run.
+type queryer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
 
 // Record is one applied migration.
@@ -66,11 +88,26 @@ func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
-	if err := r.createTable(ctx, db); err != nil {
+	// One connection for the whole run: a session advisory lock is only held by the session that
+	// took it, so the lock and the statements it guards have to share a connection.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("acquire connection: %w", err)
+	}
+	defer conn.Close()
+
+	dialect := r.dialect()
+
+	if err := dialect.Lock(ctx, conn, r.TableName); err != nil {
+		return err
+	}
+	defer dialect.Unlock(ctx, conn, r.TableName)
+
+	if err := r.createTable(ctx, conn); err != nil {
 		return err
 	}
 
-	applied, err := r.Applied(ctx, db)
+	applied, err := r.applied(ctx, conn)
 	if err != nil {
 		return err
 	}
@@ -92,7 +129,7 @@ func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 			continue
 		}
 
-		if err := r.apply(ctx, db, m); err != nil {
+		if err := r.apply(ctx, conn, m); err != nil {
 			return fmt.Errorf("apply migration %s: %w", m.fileName, err)
 		}
 	}
@@ -108,6 +145,10 @@ func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 
 // Applied returns the recorded migrations in version order.
 func (r Runner) Applied(ctx context.Context, db *sql.DB) ([]Record, error) {
+	return r.applied(ctx, db)
+}
+
+func (r Runner) applied(ctx context.Context, db queryer) ([]Record, error) {
 	query := fmt.Sprintf(`SELECT version, name, checksum, applied_at FROM %s ORDER BY version`, r.TableName)
 
 	rows, err := db.QueryContext(ctx, query)
@@ -143,13 +184,8 @@ func (r Runner) Applied(ctx context.Context, db *sql.DB) ([]Record, error) {
 	return records, nil
 }
 
-func (r Runner) createTable(ctx context.Context, db *sql.DB) error {
-	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-		version    INTEGER NOT NULL PRIMARY KEY,
-		name       TEXT NOT NULL,
-		checksum   TEXT NOT NULL,
-		applied_at TEXT NOT NULL
-	) STRICT`, r.TableName)
+func (r Runner) createTable(ctx context.Context, db queryer) error {
+	query := r.dialect().CreateTable(r.TableName)
 
 	if _, err := db.ExecContext(ctx, query); err != nil {
 		return fmt.Errorf("create migration table %s: %w", r.TableName, err)
@@ -158,7 +194,7 @@ func (r Runner) createTable(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (r Runner) apply(ctx context.Context, db *sql.DB, m migration) error {
+func (r Runner) apply(ctx context.Context, db queryer, m migration) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
@@ -169,7 +205,7 @@ func (r Runner) apply(ctx context.Context, db *sql.DB, m migration) error {
 		return fmt.Errorf("execute statements: %w", err)
 	}
 
-	insert := fmt.Sprintf(`INSERT INTO %s (version, name, checksum, applied_at) VALUES (?, ?, ?, ?)`, r.TableName)
+	insert := r.dialect().Insert(r.TableName)
 
 	if _, err := tx.ExecContext(ctx, insert, m.version, m.name, m.checksum, time.Now().UTC().Format(timeFormat)); err != nil {
 		return fmt.Errorf("record migration: %w", err)

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -19,32 +18,32 @@ const expiredSessionSweepInterval = time.Hour
 type Application struct {
 	config   *Config
 	logger   *slog.Logger
-	db       *sql.DB
+	stores   *Stores
 	services *services
 	handler  http.Handler
 }
 
 func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Application, error) {
-	db, err := OpenDatabase(ctx, cfg.Database)
+	stores, err := OpenStores(ctx, cfg.Database)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	svc, err := newServices(ctx, cfg, db, logger)
+	svc, err := newServices(ctx, cfg, stores, logger)
 	if err != nil {
-		db.Close()
+		stores.Close()
 
 		return nil, fmt.Errorf("build services: %w", err)
 	}
 
-	handler, err := NewHandler(cfg, db, svc, logger)
+	handler, err := NewHandler(cfg, stores, svc, logger)
 	if err != nil {
-		db.Close()
+		stores.Close()
 
 		return nil, fmt.Errorf("build http handler: %w", err)
 	}
 
-	return &Application{config: cfg, logger: logger, db: db, services: svc, handler: handler}, nil
+	return &Application{config: cfg, logger: logger, stores: stores, services: svc, handler: handler}, nil
 }
 
 func (a *Application) Handler() http.Handler {
@@ -52,11 +51,7 @@ func (a *Application) Handler() http.Handler {
 }
 
 func (a *Application) Close() error {
-	if err := a.db.Close(); err != nil {
-		return fmt.Errorf("close database: %w", err)
-	}
-
-	return nil
+	return a.stores.Close()
 }
 
 // SweepExpiredSessions runs until the context is cancelled.
