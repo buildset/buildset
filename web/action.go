@@ -3,7 +3,7 @@ package web
 import (
 	"fmt"
 
-	"github.com/nasermirzaei89/ms/pkg/ref"
+	"github.com/buildset/buildset/pkg/ref"
 )
 
 // The actions this site asks about. The vocabulary belongs here: the authorization service stores

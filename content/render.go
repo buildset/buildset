@@ -26,7 +26,7 @@ func renderPlainText(body string) template.HTML {
 
 	var builder strings.Builder
 
-	for _, paragraph := range strings.Split(normalized, "\n\n") {
+	for paragraph := range strings.SplitSeq(normalized, "\n\n") {
 		paragraph = strings.TrimSpace(paragraph)
 		if paragraph == "" {
 			continue

@@ -5,13 +5,13 @@ import (
 	"errors"
 	"html/template"
 
-	"github.com/nasermirzaei89/ms/auth"
-	"github.com/nasermirzaei89/ms/auth/hash"
-	authui "github.com/nasermirzaei89/ms/auth/ui"
-	"github.com/nasermirzaei89/ms/authz"
-	"github.com/nasermirzaei89/ms/content"
-	"github.com/nasermirzaei89/ms/pkg/ref"
-	"github.com/nasermirzaei89/ms/web"
+	"github.com/buildset/buildset/auth"
+	"github.com/buildset/buildset/auth/hash"
+	authui "github.com/buildset/buildset/auth/ui"
+	"github.com/buildset/buildset/authz"
+	"github.com/buildset/buildset/content"
+	"github.com/buildset/buildset/pkg/ref"
+	"github.com/buildset/buildset/web"
 )
 
 // This file is the only place where one service's types are converted into another's. Each adapter

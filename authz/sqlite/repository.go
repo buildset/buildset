@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/nasermirzaei89/ms/authz"
-	"github.com/nasermirzaei89/ms/pkg/sqlmigrate"
+	"github.com/buildset/buildset/authz"
+	"github.com/buildset/buildset/pkg/sqlmigrate"
 	sqlitedriver "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )

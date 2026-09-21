@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/nasermirzaei89/ms/auth"
+	"github.com/buildset/buildset/auth"
 )
 
 // registrationGate answers 404 when this visitor may not create an account, so a closed instance

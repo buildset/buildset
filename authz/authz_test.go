@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/nasermirzaei89/ms/authz"
-	authzsqlite "github.com/nasermirzaei89/ms/authz/sqlite"
+	"github.com/buildset/buildset/authz"
+	authzsqlite "github.com/buildset/buildset/authz/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"

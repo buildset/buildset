@@ -3,7 +3,7 @@ package content
 import (
 	"time"
 
-	"github.com/nasermirzaei89/ms/pkg/ref"
+	"github.com/buildset/buildset/pkg/ref"
 )
 
 const MaxTitleLength = 200

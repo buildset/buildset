@@ -3,8 +3,8 @@ package ui
 import (
 	"errors"
 
-	"github.com/nasermirzaei89/ms/auth"
-	"github.com/nasermirzaei89/ms/auth/hash"
+	"github.com/buildset/buildset/auth"
+	"github.com/buildset/buildset/auth/hash"
 )
 
 // userFacingError decides which failures are safe and useful to show on a form. Anything not

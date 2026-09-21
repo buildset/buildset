@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nasermirzaei89/ms/app"
+	"github.com/buildset/buildset/app"
 	"github.com/playwright-community/playwright-go"
 	"github.com/stretchr/testify/require"
 )

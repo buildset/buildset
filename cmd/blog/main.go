@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/buildset/buildset/app"
 	"github.com/joho/godotenv"
-	"github.com/nasermirzaei89/ms/app"
 )
 
 func main() {

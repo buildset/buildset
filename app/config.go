@@ -53,7 +53,7 @@ func LoadConfig() (*Config, error) {
 		SiteTitle:         env.GetString("SITE_TITLE", "Blog"),
 		ShutdownTimeout:   env.GetDuration("SHUTDOWN_TIMEOUT", 15*time.Second),
 		Database: DatabaseConfig{
-			Path: env.GetString("DATABASE_PATH", "ms.db"),
+			Path: env.GetString("DATABASE_PATH", "buildset.db"),
 		},
 		Auth: AuthConfig{
 			BcryptCost:       env.GetInt("AUTH_BCRYPT_COST", 12),

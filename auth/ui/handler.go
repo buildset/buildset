@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/nasermirzaei89/ms/auth"
+	"github.com/buildset/buildset/auth"
 )
 
 // maxFormBytes caps a form submission. These forms are a handful of short fields.

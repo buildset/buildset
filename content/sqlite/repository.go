@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nasermirzaei89/ms/content"
-	"github.com/nasermirzaei89/ms/pkg/sqlmigrate"
+	"github.com/buildset/buildset/content"
+	"github.com/buildset/buildset/pkg/sqlmigrate"
 )
 
 //go:embed migrations/*.sql

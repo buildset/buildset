@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/nasermirzaei89/ms/auth"
-	"github.com/nasermirzaei89/ms/auth/hash"
-	authsqlite "github.com/nasermirzaei89/ms/auth/sqlite"
-	"github.com/nasermirzaei89/ms/authz"
-	authzsqlite "github.com/nasermirzaei89/ms/authz/sqlite"
-	"github.com/nasermirzaei89/ms/content"
-	contentsqlite "github.com/nasermirzaei89/ms/content/sqlite"
+	"github.com/buildset/buildset/auth"
+	"github.com/buildset/buildset/auth/hash"
+	authsqlite "github.com/buildset/buildset/auth/sqlite"
+	"github.com/buildset/buildset/authz"
+	authzsqlite "github.com/buildset/buildset/authz/sqlite"
+	"github.com/buildset/buildset/content"
+	contentsqlite "github.com/buildset/buildset/content/sqlite"
 )
 
 // administratorRole is the role the first user is given. The name lives here because it is the

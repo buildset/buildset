@@ -1,4 +1,4 @@
-# ms
+# BuildSet
 
 A proposal for a set of general-purpose, open-source Go services, plus a blogging platform as the reference application that shows how they compose.
 
@@ -11,7 +11,7 @@ cp .env.example .env   # optional, every setting has a default
 make run               # builds bin/blog and starts it
 ```
 
-Open `http://localhost:8080`. With no accounts yet you are sent to `/setup`, and the account you create there becomes the administrator. Data lands in a SQLite file, `ms.db` by default.
+Open `http://localhost:8080`. With no accounts yet you are sent to `/setup`, and the account you create there becomes the administrator. Data lands in a SQLite file, `buildset.db` by default.
 
 `make build` writes `bin/blog`. `make format` formats and tidies, `make lint` checks formatting and runs `go vet`, `make test` runs every test.
 

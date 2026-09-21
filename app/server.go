@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	authui "github.com/nasermirzaei89/ms/auth/ui"
-	"github.com/nasermirzaei89/ms/web"
+	authui "github.com/buildset/buildset/auth/ui"
+	"github.com/buildset/buildset/web"
 )
 
 // NewHandler builds the root mux. Service handlers are mounted here and nowhere else, which keeps

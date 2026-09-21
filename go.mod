@@ -1,4 +1,4 @@
-module github.com/nasermirzaei89/ms
+module github.com/buildset/buildset
 
 go 1.27.1
 

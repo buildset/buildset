@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nasermirzaei89/ms/content"
-	contentsqlite "github.com/nasermirzaei89/ms/content/sqlite"
+	"github.com/buildset/buildset/content"
+	contentsqlite "github.com/buildset/buildset/content/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"

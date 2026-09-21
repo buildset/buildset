@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/nasermirzaei89/ms/auth"
+	"github.com/buildset/buildset/auth"
 )
 
 // setupGate reports whether the first-run pages should respond at all. Once a user exists they are

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/nasermirzaei89/ms/auth"
+	"github.com/buildset/buildset/auth"
 )
 
 func (h *Handler) passwordForm(w http.ResponseWriter, r *http.Request) {

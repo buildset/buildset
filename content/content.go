@@ -5,6 +5,7 @@ package content
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 const (
@@ -55,13 +56,7 @@ func canTransition(from, to Status) bool {
 		return true
 	}
 
-	for _, allowed := range transitions[from] {
-		if allowed == to {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(transitions[from], to)
 }
 
 // ContentTypePlainText is the only body format supported today.
