@@ -13,7 +13,7 @@ import (
 //
 // squirrel has no vocabulary for UNION, so the two halves are rendered and joined here. Both are
 // still built rather than written, which is what keeps the arguments ordered and the placeholders
-// numbered correctly for either dialect.
+// numbered correctly.
 func union(ctx context.Context, db squirrel.QueryerContext, format squirrel.PlaceholderFormat, parts ...squirrel.SelectBuilder) (*sql.Rows, error) {
 	var (
 		clauses   []string

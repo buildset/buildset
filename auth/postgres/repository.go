@@ -1,9 +1,5 @@
 // Package postgres stores auth's users and sessions in Postgres. It owns its schema and migrates
 // itself, so wiring auth to a different backend runs none of this.
-//
-// It is the twin of auth/sqlite. The two are held to the same behaviour by the shared suite in
-// auth/repotest, and differ only in the placeholder style, the timestamp type, and how the driver
-// reports a constraint violation.
 package postgres
 
 import (
@@ -40,8 +36,8 @@ func NewRepository(ctx context.Context, db *sql.DB) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-// builder is the query builder bound to this backend. Naming the placeholder style once here is
-// what keeps every statement in this package identical to its SQLite twin.
+// builder is the query builder for this package, and the only place the placeholder style is
+// named.
 func (r *Repository) builder() squirrel.StatementBuilderType {
 	return squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).RunWith(r.db)
 }

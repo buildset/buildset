@@ -1,8 +1,5 @@
 // Package postgres stores content's posts in Postgres. It owns its schema and migrates itself, so
 // wiring content to a different backend runs none of this.
-//
-// It is the twin of content/sqlite. The two are held to the same behaviour by the shared suite in
-// content/repotest, and differ only in the placeholder style and the timestamp type.
 package postgres
 
 import (
@@ -38,9 +35,9 @@ func NewRepository(ctx context.Context, db *sql.DB) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-// builder is the query builder bound to this backend. Naming the placeholder style once here is
-// what keeps every statement in this package identical to its SQLite twin, including the filtered
-// listing whose placeholders would otherwise have to be numbered by hand.
+// builder is the query builder for this package, and the only place the placeholder style is
+// named. Letting it number the placeholders is what keeps the filtered listing from having to do
+// it by hand.
 func (r *Repository) builder() squirrel.StatementBuilderType {
 	return squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).RunWith(r.db)
 }

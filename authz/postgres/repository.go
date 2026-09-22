@@ -1,9 +1,5 @@
 // Package postgres stores authz's roles and grants in Postgres. It owns its schema and migrates
 // itself, so wiring authz to a different backend runs none of this.
-//
-// It is the twin of authz/sqlite. The two are held to the same behaviour by the shared suite in
-// authz/repotest, and differ only in the placeholder style, the timestamp type, and how the driver
-// reports a constraint violation.
 package postgres
 
 import (
@@ -39,8 +35,7 @@ func NewRepository(ctx context.Context, db *sql.DB) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-// placeholders is this backend's placeholder style, and the only place the dialect is named.
-// Naming it once is what keeps every statement in this package identical to its SQLite twin.
+// placeholders is this package's placeholder style, and the only place the dialect is named.
 var placeholders squirrel.PlaceholderFormat = squirrel.Dollar
 
 func builder() squirrel.StatementBuilderType {
