@@ -2,7 +2,7 @@
 
 A proposal for a set of general-purpose, open-source Go services, plus a blogging platform as the reference application that shows how they compose.
 
-Status: the blogging platform runs as a single binary. Four services are implemented as a modular monolith: `auth`, `authz`, `content`, and `web`. The remaining general services are still a proposal.
+Status: four services are implemented — `auth`, `authz`, `content`, and `web` — and they run both ways from the same code. One binary with SQLite, or four containers with Postgres behind a gateway. The remaining general services are still a proposal.
 
 ## Running it
 
@@ -15,7 +15,30 @@ Open `http://localhost:8080`. With no accounts yet you are sent to `/setup`, and
 
 `make build` writes `bin/blog`. `make format` formats and tidies, `make lint` checks formatting and runs `go vet`, `make test` runs every test.
 
-The end-to-end tests drive a real browser and need Playwright's Chromium once:
+### Running it as four services
+
+```sh
+make compose-up      # four binaries, Postgres, and a gateway
+make compose-smoke   # checks the arrangement answers through the one published port
+make compose-down
+```
+
+Open `http://localhost:8080` again. It is the same site, the same pages, and the same first-run setup, which is the point.
+
+The gateway is the only published port. It routes `/setup`, `/login`, `/logout`, `/register`, and `/password` to `auth` and everything else to `web`, so the browser sees one origin. That is load-bearing: the session cookie is host-only, the post-sign-in redirect check is same-origin, and the cross-origin form protection reads `Sec-Fetch-Site`. All three keep working unchanged because nothing ever leaves the origin. This is also why `auth` serves its pages at top-level paths rather than under a prefix.
+
+Nothing routes to `authz`, to `content`, or to any `/v1` path. Those are reachable only on the compose network, which is the access control for the service APIs.
+
+Postgres runs as one database with a schema and a login role per service, each role's `search_path` holding only its own schema. An unqualified reference to another service's table is an error rather than a silent cross-service read:
+
+```sh
+docker compose exec postgres psql -U auth_service -d buildset -c 'select * from content.posts'
+# ERROR:  permission denied for schema content
+```
+
+The end-to-end tests drive a real browser, and run the same scenarios against both arrangements: the single binary, and the four services behind a proxy carrying the gateway's routing. The scenarios never mention which, because the claim a split makes is that it behaves the same way. `E2E_TOPOLOGY` is `mono`, `split`, or `both`, and defaults to `both`.
+
+They need Playwright's Chromium once:
 
 ```sh
 go run github.com/playwright-community/playwright-go/cmd/playwright@v0.6000.0 install chromium
@@ -31,7 +54,7 @@ Username and password sign-in, RBAC with `admin`, `author`, and `reader`, posts 
 
 Administrators add and remove accounts and assign roles. Authors write their own posts and hold rights only over the posts they created. Everyone can edit their own name, username, and password.
 
-There is no API, no comments, no tags, no scheduling, and no pagination yet.
+Each service has a small JSON API, but only for the other services: it is what the split arrangement talks over, it is not published through the gateway, and it is not a public API. There are no comments, no tags, no scheduling, and no pagination yet.
 
 ## Motivation
 
@@ -133,7 +156,9 @@ Each service owns its tables. Where those tables live is a wiring decision: one 
 
 Nothing in the code enforces the boundary. A repository implementation handed the same connection as another service can join across it. That is the operator's decision and the operator's consequence. The services do not do it, and the split stays possible for anyone who did not.
 
-Cross-service transactions are not supported.
+Cross-service transactions are not supported. Where a flow writes to two services, it is ordered so that a failure leaves a state an operator can retry rather than an orphan nothing names: grants are purged before the resource they point at, not after. Where that ordering is impossible, because the second call needs a reference only the first can give, the call is idempotent, it is retried once, and the failure says what actually happened instead of reporting a generic error that would invite a duplicate.
+
+Two backends ship, SQLite and Postgres, selected by `DATABASE_DRIVER`. They are held to the same behaviour by a shared conformance suite that both run: `make test` covers SQLite, and `make test-postgres` starts a throwaway database and covers both. Timestamps are text in both, in a format whose byte order is chronological order, and the Postgres columns that order or uniquify are `COLLATE "C"` so the database locale cannot change that.
 
 Backends are not equivalent, and the design does not pretend otherwise. A backend may support only part of a service's API, or support it with different quality: SQLite gives simpler search than Postgres full text, which is weaker again than a dedicated engine; cursor pagination, ordering, and aggregate behaviour vary the same way. Each service documents what each of its backends supports, and choosing a backend is choosing that set of features.
 
