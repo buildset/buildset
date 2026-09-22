@@ -7,16 +7,13 @@ import (
 	"time"
 
 	"github.com/SladkyCitron/slogcolor"
+	"github.com/buildset/buildset/pkg/config"
 	"github.com/buildset/buildset/pkg/reqid"
 )
 
-// LogConfig is how a binary wants its logs written.
-type LogConfig struct {
-	Level slog.Level
-	JSON  bool
-}
-
-func NewLogger(cfg LogConfig) *slog.Logger {
+// NewLogger builds the logger every binary uses. The settings live in pkg/config with the rest,
+// so there is one definition of what LOG_LEVEL and LOG_JSON mean.
+func NewLogger(cfg config.Log) *slog.Logger {
 	opts := &slog.HandlerOptions{Level: cfg.Level}
 
 	var handler slog.Handler
