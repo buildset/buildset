@@ -2,7 +2,7 @@
 
 A proposal for a set of general-purpose, open-source Go services, plus a blogging platform as the reference application that shows how they compose.
 
-Status: four services are implemented — `auth`, `authz`, `content`, and `web` — and they run both ways from the same code. One binary with SQLite, or four containers with Postgres behind a gateway. The remaining general services are still a proposal.
+Status: four services are implemented (`auth`, `authz`, `content`, and `web`), and they run both ways from the same code. One binary with SQLite, or four containers with Postgres behind a gateway. The remaining general services are still a proposal.
 
 ## Running it
 
