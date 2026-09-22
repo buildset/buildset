@@ -59,8 +59,8 @@ func startPlaywright() (*playwright.Playwright, error) {
 	return playwright.Run()
 }
 
-// newHarness boots the application on a temporary database and opens a browser against it.
-func newHarness(t *testing.T) *harness {
+// newBrowser starts a browser, or skips the test when there is none to start.
+func newBrowser(t *testing.T) playwright.Browser {
 	t.Helper()
 
 	pw, err := startPlaywright()
@@ -76,6 +76,15 @@ func newHarness(t *testing.T) *harness {
 	}
 
 	t.Cleanup(func() { browser.Close() })
+
+	return browser
+}
+
+// newMonoHarness boots the single binary on a temporary database and opens a browser against it.
+func newMonoHarness(t *testing.T) *harness {
+	t.Helper()
+
+	browser := newBrowser(t)
 
 	config := &app.Config{
 		SessionCookieName: app.SessionCookieName,
@@ -104,6 +113,31 @@ func newHarness(t *testing.T) *harness {
 	t.Cleanup(server.Close)
 
 	return &harness{url: server.URL, browser: browser}
+}
+
+// topologyEnvVar chooses which arrangements the scenarios run against.
+const topologyEnvVar = "E2E_TOPOLOGY"
+
+// forEachTopology runs a scenario against the single binary and against the four services behind a
+// gateway.
+//
+// The scenarios never mention either, because the whole claim being made about a split is that it
+// behaves the same way. Running one set of tests against both is what checks that claim, and it is
+// what catches the things a split actually breaks: the error envelope surviving the wire, a dead
+// dependency not being read as an answer, the session cookie surviving the gateway, and the
+// first-user hook crossing a network.
+func forEachTopology(t *testing.T, scenario func(*testing.T, *harness)) {
+	t.Helper()
+
+	topology := env.GetString(topologyEnvVar, "both")
+
+	if topology == "mono" || topology == "both" {
+		t.Run("mono", func(t *testing.T) { scenario(t, newMonoHarness(t)) })
+	}
+
+	if topology == "split" || topology == "both" {
+		t.Run("split", func(t *testing.T) { scenario(t, newSplitHarness(t)) })
+	}
 }
 
 // newPage opens a fresh browser context, which is a browser with its own cookie jar.

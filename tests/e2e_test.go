@@ -11,7 +11,10 @@ import (
 // TestFirstRunToPublishedPost is the journey that has to work for the software to be worth
 // running: an empty instance becomes a blog with something on it that a stranger can read.
 func TestFirstRunToPublishedPost(t *testing.T) {
-	h := newHarness(t)
+	forEachTopology(t, firstRunToPublishedPost)
+}
+
+func firstRunToPublishedPost(t *testing.T, h *harness) {
 	admin := h.newPage(t)
 
 	// An instance with no accounts sends its first visitor to set itself up.
@@ -55,8 +58,10 @@ func TestFirstRunToPublishedPost(t *testing.T) {
 // TestSignedInReaderHasNoAdministration checks the other half: having an account is not having
 // access.
 func TestSignedInReaderHasNoAdministration(t *testing.T) {
-	h := newHarness(t)
+	forEachTopology(t, signedInReaderHasNoAdministration)
+}
 
+func signedInReaderHasNoAdministration(t *testing.T, h *harness) {
 	admin := h.newPage(t)
 	h.open(t, admin, "/setup")
 	fill(t, admin, "Username", "ada")

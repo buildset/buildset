@@ -234,16 +234,22 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.deps.Auth.DeleteUser(r.Context(), subject.Ref); err != nil {
-		s.renderInternalError(w, r, err, "delete user")
-
-		return
-	}
-
+	// The roles and grants go first, and the account second, for the same reason as deleting a
+	// post: these are two services and cannot share a transaction, and this is the order where a
+	// failure leaves something an administrator can retry rather than something left behind with
+	// nothing to name it. An account stripped of its roles is an account, and deleting it again
+	// finishes the job.
+	//
 	// Roles and grants keyed to a reference that no longer resolves would apply to whoever got
 	// that reference next, so they go with the account.
 	if err := s.deps.Authz.PurgeSubject(r.Context(), subject.Ref); err != nil {
 		s.renderInternalError(w, r, err, "purge user grants")
+
+		return
+	}
+
+	if err := s.deps.Auth.DeleteUser(r.Context(), subject.Ref); err != nil {
+		s.renderInternalError(w, r, err, "delete user")
 
 		return
 	}
