@@ -1,14 +1,19 @@
 BINARY := bin/blog
 
+COMPOSE_PORT := 8080
+
 TEST_PG_CONTAINER := buildset-test-pg
 TEST_PG_DATABASE := buildset_test
 TEST_PG_PORT := 55432
 TEST_PG_DSN := postgres://postgres:postgres@localhost:$(TEST_PG_PORT)/$(TEST_PG_DATABASE)?sslmode=disable
 
-.PHONY: build format lint test test-postgres run
+.PHONY: build build-all format lint test test-postgres run compose-up compose-down compose-logs compose-smoke
 
 build:
 	go build -o $(BINARY) ./cmd/blog
+
+build-all:
+	go build -o bin/ ./cmd/...
 
 format:
 	gofmt -s -w .
@@ -40,3 +45,23 @@ test-postgres:
 
 run: build
 	./$(BINARY)
+
+compose-up:
+	docker compose up -d --build --wait
+
+compose-down:
+	docker compose down
+
+compose-logs:
+	docker compose logs -f
+
+# Proves the whole arrangement answers through the one published port.
+compose-smoke:
+	@set -e; \
+	curl -fsS localhost:$(COMPOSE_PORT)/healthz >/dev/null && echo "gateway ok"; \
+	code=$$(curl -s -o /dev/null -w '%{http_code}' localhost:$(COMPOSE_PORT)/login); \
+	test "$$code" = 200 && echo "identity pages ok ($$code)"; \
+	code=$$(curl -s -o /dev/null -w '%{http_code}' localhost:$(COMPOSE_PORT)/); \
+	test "$$code" = 303 -o "$$code" = 200 && echo "site ok ($$code)"; \
+	code=$$(curl -s -o /dev/null -w '%{http_code}' localhost:$(COMPOSE_PORT)/v1/can); \
+	test "$$code" = 404 && echo "internal api not exposed ($$code)"

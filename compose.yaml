@@ -1,0 +1,129 @@
+name: buildset
+
+x-service: &service
+  restart: unless-stopped
+  # Only the gateway publishes a port. Everything else is reachable on this network alone.
+  expose: ["8080"]
+  healthcheck:
+    # The images have no shell, so each binary probes its own readiness.
+    test: ["CMD", "/service", "-healthcheck"]
+    interval: 10s
+    timeout: 3s
+    retries: 5
+    start_period: 10s
+
+x-env: &env
+  PORT: "8080"
+  LOG_LEVEL: "info"
+  LOG_JSON: "true"
+  DATABASE_DRIVER: "postgres"
+  # The gateway speaks plain HTTP here. Behind TLS this must become true, or the browser will
+  # never send the session cookie back.
+  SECURE_COOKIES: "false"
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: buildset
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # C collation, so text timestamps and identifiers order by byte exactly as they do under
+      # SQLite. The repositories depend on that.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:-auth}
+      AUTHZ_DB_PASSWORD: ${AUTHZ_DB_PASSWORD:-authz}
+      CONTENT_DB_PASSWORD: ${CONTENT_DB_PASSWORD:-content}
+    volumes:
+      # Postgres 18 images keep the cluster in a major-version subdirectory, so the mount goes one
+      # level up from where earlier versions put it.
+      - pgdata:/var/lib/postgresql
+      # Creates one schema and one role per service. Runs once, on an empty data directory.
+      - ./deploy/postgres/init.sh:/docker-entrypoint-initdb.d/10-schemas.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d buildset"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  authz:
+    <<: *service
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args: {CMD: authz}
+    environment:
+      <<: *env
+      DATABASE_DSN: "postgres://authz_service:${AUTHZ_DB_PASSWORD:-authz}@postgres:5432/buildset?sslmode=disable"
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  content:
+    <<: *service
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args: {CMD: content}
+    environment:
+      <<: *env
+      DATABASE_DSN: "postgres://content_service:${CONTENT_DB_PASSWORD:-content}@postgres:5432/buildset?sslmode=disable"
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  auth:
+    <<: *service
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args: {CMD: auth}
+    environment:
+      <<: *env
+      DATABASE_DSN: "postgres://auth_service:${AUTH_DB_PASSWORD:-auth}@postgres:5432/buildset?sslmode=disable"
+      AUTHZ_URL: "http://authz:8080"
+      AUTH_BCRYPT_COST: "12"
+      AUTH_SESSION_TTL: "336h"
+      AUTH_REGISTRATION_OPEN: "false"
+    depends_on:
+      postgres: {condition: service_healthy}
+      # Creating the first administrator assigns a role through authz. Starting auth first would
+      # make the very first thing an operator does fail.
+      authz: {condition: service_healthy}
+
+  web:
+    <<: *service
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+      args: {CMD: web}
+    environment:
+      <<: *env
+      # The site has no storage of its own.
+      DATABASE_DRIVER: ""
+      AUTH_URL: "http://auth:8080"
+      AUTHZ_URL: "http://authz:8080"
+      CONTENT_URL: "http://content:8080"
+      SITE_TITLE: "Blog"
+    depends_on:
+      auth: {condition: service_healthy}
+      authz: {condition: service_healthy}
+      content: {condition: service_healthy}
+
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "${PORT:-8080}:8080"
+    depends_on:
+      web: {condition: service_healthy}
+      auth: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
