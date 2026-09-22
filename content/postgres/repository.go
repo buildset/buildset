@@ -1,8 +1,8 @@
 // Package postgres stores content's posts in Postgres. It owns its schema and migrates itself, so
 // wiring content to a different backend runs none of this.
 //
-// It is the twin of content/sqlite and deliberately mirrors it statement for statement: the two
-// are held to the same behaviour by the shared suite in content/repotest.
+// It is the twin of content/sqlite. The two are held to the same behaviour by the shared suite in
+// content/repotest, and differ only in the placeholder style and the timestamp type.
 package postgres
 
 import (
@@ -11,8 +11,8 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"strings"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/buildset/buildset/content"
 	"github.com/buildset/buildset/pkg/sqlmigrate"
 )
@@ -20,7 +20,33 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-const postColumns = `id, author_ref, title, body, content_type, status, created_at, updated_at, published_at`
+const tablePosts = "posts"
+
+const (
+	postColumnID          = "id"
+	postColumnAuthorRef   = "author_ref"
+	postColumnTitle       = "title"
+	postColumnBody        = "body"
+	postColumnContentType = "content_type"
+	postColumnStatus      = "status"
+	postColumnCreatedAt   = "created_at"
+	postColumnUpdatedAt   = "updated_at"
+	postColumnPublishedAt = "published_at"
+)
+
+func postColumns() []string {
+	return []string{
+		postColumnID,
+		postColumnAuthorRef,
+		postColumnTitle,
+		postColumnBody,
+		postColumnContentType,
+		postColumnStatus,
+		postColumnCreatedAt,
+		postColumnUpdatedAt,
+		postColumnPublishedAt,
+	}
+}
 
 type Repository struct {
 	db *sql.DB
@@ -41,13 +67,29 @@ func NewRepository(ctx context.Context, db *sql.DB) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-func (r *Repository) InsertPost(ctx context.Context, post *content.Post) error {
-	const query = `INSERT INTO posts (` + postColumns + `) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+// builder is the query builder bound to this backend. Naming the placeholder style once here is
+// what keeps every statement below identical to its SQLite twin, including the filtered listing
+// whose placeholders would otherwise have to be numbered by hand.
+func (r *Repository) builder() squirrel.StatementBuilderType {
+	return squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).RunWith(r.db)
+}
 
-	_, err := r.db.ExecContext(ctx, query,
-		post.ID, post.AuthorRef, post.Title, post.Body, post.ContentType, string(post.Status),
-		post.CreatedAt, post.UpdatedAt, post.PublishedAt,
-	)
+func (r *Repository) InsertPost(ctx context.Context, post *content.Post) error {
+	_, err := r.builder().
+		Insert(tablePosts).
+		Columns(postColumns()...).
+		Values(
+			post.ID,
+			post.AuthorRef,
+			post.Title,
+			post.Body,
+			post.ContentType,
+			string(post.Status),
+			post.CreatedAt,
+			post.UpdatedAt,
+			post.PublishedAt,
+		).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("insert post: %w", err)
 	}
@@ -55,93 +97,74 @@ func (r *Repository) InsertPost(ctx context.Context, post *content.Post) error {
 	return nil
 }
 
+// UpdatePost deliberately leaves author_ref alone: ownership is immutable.
 func (r *Repository) UpdatePost(ctx context.Context, post *content.Post) error {
-	const query = `UPDATE posts
-		SET title = $1, body = $2, content_type = $3, status = $4, updated_at = $5, published_at = $6
-		WHERE id = $7`
-
-	result, err := r.db.ExecContext(ctx, query,
-		post.Title, post.Body, post.ContentType, string(post.Status),
-		post.UpdatedAt, post.PublishedAt, post.ID,
-	)
+	result, err := r.builder().
+		Update(tablePosts).
+		Set(postColumnTitle, post.Title).
+		Set(postColumnBody, post.Body).
+		Set(postColumnContentType, post.ContentType).
+		Set(postColumnStatus, string(post.Status)).
+		Set(postColumnUpdatedAt, post.UpdatedAt).
+		Set(postColumnPublishedAt, post.PublishedAt).
+		Where(squirrel.Eq{postColumnID: post.ID}).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("update post: %w", err)
 	}
 
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("count affected rows: %w", err)
-	}
-
-	if affected == 0 {
-		return content.ErrPostNotFound
-	}
-
-	return nil
+	return requireOneRow(result, fmt.Errorf("%w: %s", content.ErrPostNotFound, post.ID))
 }
 
 func (r *Repository) DeletePost(ctx context.Context, id string) error {
-	result, err := r.db.ExecContext(ctx, `DELETE FROM posts WHERE id = $1`, id)
+	result, err := r.builder().
+		Delete(tablePosts).
+		Where(squirrel.Eq{postColumnID: id}).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("delete post: %w", err)
 	}
 
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("count affected rows: %w", err)
-	}
-
-	if affected == 0 {
-		return content.ErrPostNotFound
-	}
-
-	return nil
+	return requireOneRow(result, fmt.Errorf("%w: %s", content.ErrPostNotFound, id))
 }
 
 func (r *Repository) GetPost(ctx context.Context, id string) (*content.Post, error) {
-	const query = `SELECT ` + postColumns + ` FROM posts WHERE id = $1`
+	row := r.builder().
+		Select(postColumns()...).
+		From(tablePosts).
+		Where(squirrel.Eq{postColumnID: id}).
+		QueryRowContext(ctx)
 
-	return scanPost(r.db.QueryRowContext(ctx, query, id))
+	return scanPost(row, fmt.Errorf("%w: %s", content.ErrPostNotFound, id))
 }
 
 func (r *Repository) ListPosts(ctx context.Context, filter content.PostFilter) ([]content.Post, error) {
-	query := `SELECT ` + postColumns + ` FROM posts`
+	query := r.builder().
+		Select(postColumns()...).
+		From(tablePosts)
 
-	var (
-		conditions []string
-		arguments  []any
-	)
-
-	// Each condition appends its argument first and numbers its placeholder from the resulting
-	// length, so adding or skipping a condition never renumbers the others.
 	if filter.Status != "" {
-		arguments = append(arguments, string(filter.Status))
-		conditions = append(conditions, fmt.Sprintf(`status = $%d`, len(arguments)))
+		query = query.Where(squirrel.Eq{postColumnStatus: string(filter.Status)})
 	}
 
 	if filter.AuthorRef != "" {
-		arguments = append(arguments, filter.AuthorRef)
-		conditions = append(conditions, fmt.Sprintf(`author_ref = $%d`, len(arguments)))
-	}
-
-	if len(conditions) > 0 {
-		query += ` WHERE ` + strings.Join(conditions, ` AND `)
+		query = query.Where(squirrel.Eq{postColumnAuthorRef: filter.AuthorRef})
 	}
 
 	// Newest first, with the identifier as a tiebreak so the order is total and stable.
-	arguments = append(arguments, filter.Limit)
-	query += fmt.Sprintf(` ORDER BY created_at DESC, id DESC LIMIT $%d`, len(arguments))
-
-	rows, err := r.db.QueryContext(ctx, query, arguments...)
+	rows, err := query.
+		OrderBy(postColumnCreatedAt+" DESC", postColumnID+" DESC").
+		Limit(uint64(filter.Limit)).
+		QueryContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("select posts: %w", err)
 	}
 	defer rows.Close()
 
-	var posts []content.Post
+	posts := make([]content.Post, 0)
 
 	for rows.Next() {
-		post, err := scanPost(rows)
+		post, err := scanPost(rows, content.ErrPostNotFound)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +183,7 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanPost(row rowScanner) (*content.Post, error) {
+func scanPost(row rowScanner, notFound error) (*content.Post, error) {
 	var (
 		post        content.Post
 		status      string
@@ -173,7 +196,7 @@ func scanPost(row rowScanner) (*content.Post, error) {
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, content.ErrPostNotFound
+			return nil, notFound
 		}
 
 		return nil, fmt.Errorf("scan post: %w", err)
@@ -182,7 +205,7 @@ func scanPost(row rowScanner) (*content.Post, error) {
 	post.Status = content.Status(status)
 
 	// A timestamptz comes back in the session's time zone. These are instants to everything above
-	// this layer, so they are normalised here rather than carrying the server's zone around.
+	// this layer, so they are normalised rather than carrying the server's zone around.
 	post.CreatedAt = post.CreatedAt.UTC()
 	post.UpdatedAt = post.UpdatedAt.UTC()
 
@@ -192,6 +215,19 @@ func scanPost(row rowScanner) (*content.Post, error) {
 	}
 
 	return &post, nil
+}
+
+func requireOneRow(result sql.Result, notFound error) error {
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("count affected rows: %w", err)
+	}
+
+	if affected == 0 {
+		return notFound
+	}
+
+	return nil
 }
 
 var _ content.Repository = (*Repository)(nil)

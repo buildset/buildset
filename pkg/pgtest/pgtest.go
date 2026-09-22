@@ -1,62 +1,89 @@
-// Package pgtest gives the Postgres repository tests a throwaway schema each. It exists only for
-// tests, and is skipped entirely unless a database is offered through TEST_POSTGRES_DSN.
+// Package pgtest gives the Postgres repository tests a database to run against.
+//
+// It starts one container per test binary and hands each test its own schema, so tests stay
+// isolated without a container each and without truncating between them. It exists only for tests.
 package pgtest
 
 import (
+	"context"
 	"database/sql"
 	"net/url"
 	"regexp"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/nasermirzaei89/env"
+	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	postgrestc "github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
-// DSNEnvVar points at a database these tests may create and drop schemas in. Without it they skip,
-// so the default `go test ./...` stays offline and fast.
-const DSNEnvVar = "TEST_POSTGRES_DSN"
+// image is pinned so a test failure is a change in this repository rather than in a tag.
+const image = "postgres:18-alpine"
 
 var schemaNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
-// DSN returns the configured database, or skips the test.
+var (
+	containerOnce sync.Once
+	containerDSN  string
+	containerErr  error
+)
+
+// DSN returns a database these tests may create and drop schemas in, starting the container on
+// first use. Every test package that calls it gets one container, and the reaper removes it when
+// the test binary exits.
 func DSN(t *testing.T) string {
 	t.Helper()
 
-	dsn := env.GetString(DSNEnvVar, "")
-	if dsn == "" {
-		t.Skipf("set %s to run the postgres tests", DSNEnvVar)
-	}
+	containerOnce.Do(func() {
+		// Deliberately not t.Context: the container outlives the test that happened to start it.
+		ctx := context.Background()
 
-	return dsn
+		container, err := postgrestc.Run(ctx, image,
+			postgrestc.WithDatabase("buildset_test"),
+			postgrestc.WithUsername("postgres"),
+			postgrestc.WithPassword("postgres"),
+			// C collation, so text identifiers order by byte exactly as they do under SQLite.
+			// The repositories and their shared conformance suite depend on that.
+			testcontainers.WithEnv(map[string]string{
+				"POSTGRES_INITDB_ARGS": "--locale=C --encoding=UTF8",
+			}),
+			postgrestc.BasicWaitStrategies(),
+		)
+		if err != nil {
+			containerErr = err
+
+			return
+		}
+
+		containerDSN, containerErr = container.ConnectionString(ctx, "sslmode=disable")
+	})
+
+	require.NoError(t, containerErr, "start postgres container")
+
+	return containerDSN
 }
 
 // Open creates an empty schema and returns a pool whose search_path is that schema alone. The
-// schema is dropped when the test finishes, so tests can run in parallel without truncating
-// anything between them.
+// schema is dropped when the test finishes, so tests can run in parallel.
 func Open(t *testing.T, dsn string) *sql.DB {
 	t.Helper()
 
 	schema := "test_" + strconv.FormatInt(time.Now().UnixNano(), 36)
-	if !schemaNamePattern.MatchString(schema) {
-		t.Fatalf("generated schema name %q is not an identifier", schema)
-	}
+	require.Regexp(t, schemaNamePattern, schema, "generated schema name must be an identifier")
 
 	admin, err := sql.Open("pgx", dsn)
-	if err != nil {
-		t.Fatalf("open admin connection: %v", err)
-	}
+	require.NoError(t, err)
+
 	defer admin.Close()
 
-	if _, err := admin.ExecContext(t.Context(), `CREATE SCHEMA `+schema); err != nil {
-		t.Fatalf("create schema %s: %v", schema, err)
-	}
+	_, err = admin.ExecContext(t.Context(), `CREATE SCHEMA `+schema)
+	require.NoError(t, err, "create schema %s", schema)
 
 	scoped, err := sql.Open("pgx", withSearchPath(t, dsn, schema))
-	if err != nil {
-		t.Fatalf("open scoped connection: %v", err)
-	}
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		scoped.Close()
@@ -82,9 +109,7 @@ func withSearchPath(t *testing.T, dsn, schema string) string {
 	t.Helper()
 
 	parsed, err := url.Parse(dsn)
-	if err != nil {
-		t.Fatalf("parse %s: %v", DSNEnvVar, err)
-	}
+	require.NoError(t, err, "parse container dsn")
 
 	query := parsed.Query()
 	query.Set("search_path", schema)

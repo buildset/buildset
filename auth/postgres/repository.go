@@ -1,8 +1,9 @@
 // Package postgres stores auth's users and sessions in Postgres. It owns its schema and migrates
 // itself, so wiring auth to a different backend runs none of this.
 //
-// It is the twin of auth/sqlite and deliberately mirrors it statement for statement: the two are
-// held to the same behaviour by the shared suite in auth/repotest.
+// It is the twin of auth/sqlite. The two are held to the same behaviour by the shared suite in
+// auth/repotest, and differ only in the placeholder style, the timestamp type, and how the driver
+// reports a constraint violation.
 package postgres
 
 import (
@@ -13,12 +14,62 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/buildset/buildset/auth"
 	"github.com/buildset/buildset/pkg/sqlmigrate"
 )
 
 //go:embed migrations/*.sql
 var migrations embed.FS
+
+const (
+	tableUsers    = "users"
+	tableSessions = "sessions"
+)
+
+const (
+	userColumnID           = "id"
+	userColumnUsername     = "username"
+	userColumnName         = "name"
+	userColumnPasswordHash = "password_hash"
+	userColumnCreatedAt    = "created_at"
+	userColumnUpdatedAt    = "updated_at"
+)
+
+func userColumns() []string {
+	return []string{
+		userColumnID,
+		userColumnUsername,
+		userColumnName,
+		userColumnPasswordHash,
+		userColumnCreatedAt,
+		userColumnUpdatedAt,
+	}
+}
+
+const (
+	sessionColumnID        = "id"
+	sessionColumnUserID    = "user_id"
+	sessionColumnTokenHash = "token_hash"
+	sessionColumnCreatedAt = "created_at"
+	sessionColumnExpiresAt = "expires_at"
+	sessionColumnLastSeen  = "last_seen"
+	sessionColumnUserAgent = "user_agent"
+	sessionColumnIP        = "ip"
+)
+
+func sessionColumns() []string {
+	return []string{
+		sessionColumnID,
+		sessionColumnUserID,
+		sessionColumnTokenHash,
+		sessionColumnCreatedAt,
+		sessionColumnExpiresAt,
+		sessionColumnLastSeen,
+		sessionColumnUserAgent,
+		sessionColumnIP,
+	}
+}
 
 type Repository struct {
 	db *sql.DB
@@ -40,17 +91,28 @@ func NewRepository(ctx context.Context, db *sql.DB) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-func (r *Repository) InsertUser(ctx context.Context, user *auth.User) error {
-	const query = `INSERT INTO users (id, username, name, password_hash, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)`
+// builder is the query builder bound to this backend. Naming the placeholder style once here is
+// what keeps every statement below identical to its SQLite twin.
+func (r *Repository) builder() squirrel.StatementBuilderType {
+	return squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).RunWith(r.db)
+}
 
-	_, err := r.db.ExecContext(ctx, query,
-		user.ID, user.Username, user.Name, user.PasswordHash,
-		user.CreatedAt, user.UpdatedAt,
-	)
+func (r *Repository) InsertUser(ctx context.Context, user *auth.User) error {
+	_, err := r.builder().
+		Insert(tableUsers).
+		Columns(userColumns()...).
+		Values(
+			user.ID,
+			user.Username,
+			user.Name,
+			user.PasswordHash,
+			user.CreatedAt,
+			user.UpdatedAt,
+		).
+		ExecContext(ctx)
 	if err != nil {
 		if isUniqueViolation(err) {
-			return auth.ErrUsernameTaken
+			return fmt.Errorf("%w: %s", auth.ErrUsernameTaken, user.Username)
 		}
 
 		return fmt.Errorf("insert user: %w", err)
@@ -60,57 +122,73 @@ func (r *Repository) InsertUser(ctx context.Context, user *auth.User) error {
 }
 
 func (r *Repository) UpdateUser(ctx context.Context, user *auth.User) error {
-	const query = `UPDATE users SET username = $1, name = $2, password_hash = $3, updated_at = $4 WHERE id = $5`
-
-	result, err := r.db.ExecContext(ctx, query,
-		user.Username, user.Name, user.PasswordHash, user.UpdatedAt, user.ID,
-	)
+	result, err := r.builder().
+		Update(tableUsers).
+		Set(userColumnUsername, user.Username).
+		Set(userColumnName, user.Name).
+		Set(userColumnPasswordHash, user.PasswordHash).
+		Set(userColumnUpdatedAt, user.UpdatedAt).
+		Where(squirrel.Eq{userColumnID: user.ID}).
+		ExecContext(ctx)
 	if err != nil {
 		if isUniqueViolation(err) {
-			return auth.ErrUsernameTaken
+			return fmt.Errorf("%w: %s", auth.ErrUsernameTaken, user.Username)
 		}
 
 		return fmt.Errorf("update user: %w", err)
 	}
 
-	return requireOneRow(result, auth.ErrUserNotFound)
+	return requireOneRow(result, fmt.Errorf("%w: %s", auth.ErrUserNotFound, user.ID))
 }
 
 func (r *Repository) DeleteUser(ctx context.Context, id string) error {
-	result, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
+	result, err := r.builder().
+		Delete(tableUsers).
+		Where(squirrel.Eq{userColumnID: id}).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("delete user: %w", err)
 	}
 
-	return requireOneRow(result, auth.ErrUserNotFound)
+	return requireOneRow(result, fmt.Errorf("%w: %s", auth.ErrUserNotFound, id))
 }
 
 func (r *Repository) GetUser(ctx context.Context, id string) (*auth.User, error) {
-	const query = `SELECT id, username, name, password_hash, created_at, updated_at FROM users WHERE id = $1`
+	row := r.builder().
+		Select(userColumns()...).
+		From(tableUsers).
+		Where(squirrel.Eq{userColumnID: id}).
+		QueryRowContext(ctx)
 
-	return scanUser(r.db.QueryRowContext(ctx, query, id))
+	return scanUser(row, fmt.Errorf("%w: %s", auth.ErrUserNotFound, id))
 }
 
 func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*auth.User, error) {
-	const query = `SELECT id, username, name, password_hash, created_at, updated_at FROM users WHERE username = $1`
+	row := r.builder().
+		Select(userColumns()...).
+		From(tableUsers).
+		Where(squirrel.Eq{userColumnUsername: username}).
+		QueryRowContext(ctx)
 
-	return scanUser(r.db.QueryRowContext(ctx, query, username))
+	return scanUser(row, fmt.Errorf("%w: %s", auth.ErrUserNotFound, username))
 }
 
 func (r *Repository) ListUsers(ctx context.Context, limit int) ([]auth.User, error) {
-	const query = `SELECT id, username, name, password_hash, created_at, updated_at FROM users
-		ORDER BY created_at, id LIMIT $1`
-
-	rows, err := r.db.QueryContext(ctx, query, limit)
+	rows, err := r.builder().
+		Select(userColumns()...).
+		From(tableUsers).
+		OrderBy(userColumnCreatedAt, userColumnID).
+		Limit(uint64(limit)).
+		QueryContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("select users: %w", err)
 	}
 	defer rows.Close()
 
-	var users []auth.User
+	users := make([]auth.User, 0)
 
 	for rows.Next() {
-		user, err := scanUser(rows)
+		user, err := scanUser(rows, auth.ErrUserNotFound)
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +206,12 @@ func (r *Repository) ListUsers(ctx context.Context, limit int) ([]auth.User, err
 func (r *Repository) CountUsers(ctx context.Context) (int, error) {
 	var count int
 
-	if err := r.db.QueryRowContext(ctx, `SELECT count(*) FROM users`).Scan(&count); err != nil {
+	err := r.builder().
+		Select("count(*)").
+		From(tableUsers).
+		QueryRowContext(ctx).
+		Scan(&count)
+	if err != nil {
 		return 0, fmt.Errorf("count users: %w", err)
 	}
 
@@ -136,14 +219,20 @@ func (r *Repository) CountUsers(ctx context.Context) (int, error) {
 }
 
 func (r *Repository) InsertSession(ctx context.Context, session *auth.Session) error {
-	const query = `INSERT INTO sessions (id, user_id, token_hash, created_at, expires_at, last_seen, user_agent, ip)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-
-	_, err := r.db.ExecContext(ctx, query,
-		session.ID, session.UserID, session.TokenHash,
-		session.CreatedAt, session.ExpiresAt, session.LastSeen,
-		session.UserAgent, session.IP,
-	)
+	_, err := r.builder().
+		Insert(tableSessions).
+		Columns(sessionColumns()...).
+		Values(
+			session.ID,
+			session.UserID,
+			session.TokenHash,
+			session.CreatedAt,
+			session.ExpiresAt,
+			session.LastSeen,
+			session.UserAgent,
+			session.IP,
+		).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("insert session: %w", err)
 	}
@@ -152,15 +241,17 @@ func (r *Repository) InsertSession(ctx context.Context, session *auth.Session) e
 }
 
 func (r *Repository) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*auth.Session, error) {
-	const query = `SELECT id, user_id, token_hash, created_at, expires_at, last_seen, user_agent, ip
-		FROM sessions WHERE token_hash = $1`
-
 	var session auth.Session
 
-	err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
-		&session.ID, &session.UserID, &session.TokenHash,
-		&session.CreatedAt, &session.ExpiresAt, &session.LastSeen, &session.UserAgent, &session.IP,
-	)
+	err := r.builder().
+		Select(sessionColumns()...).
+		From(tableSessions).
+		Where(squirrel.Eq{sessionColumnTokenHash: tokenHash}).
+		QueryRowContext(ctx).
+		Scan(
+			&session.ID, &session.UserID, &session.TokenHash,
+			&session.CreatedAt, &session.ExpiresAt, &session.LastSeen, &session.UserAgent, &session.IP,
+		)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, auth.ErrSessionNotFound
@@ -169,8 +260,8 @@ func (r *Repository) GetSessionByTokenHash(ctx context.Context, tokenHash string
 		return nil, fmt.Errorf("select session: %w", err)
 	}
 
-	// A timestamptz comes back in the session's time zone. The service compares and formats these
-	// as instants, so they are normalised here rather than carrying the server's zone around.
+	// A timestamptz comes back in the session's time zone. These are instants to everything above
+	// this layer, so they are normalised rather than carrying the server's zone around.
 	session.CreatedAt = session.CreatedAt.UTC()
 	session.ExpiresAt = session.ExpiresAt.UTC()
 	session.LastSeen = session.LastSeen.UTC()
@@ -179,7 +270,11 @@ func (r *Repository) GetSessionByTokenHash(ctx context.Context, tokenHash string
 }
 
 func (r *Repository) TouchSession(ctx context.Context, id string, lastSeen time.Time) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE sessions SET last_seen = $1 WHERE id = $2`, lastSeen, id)
+	_, err := r.builder().
+		Update(tableSessions).
+		Set(sessionColumnLastSeen, lastSeen).
+		Where(squirrel.Eq{sessionColumnID: id}).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("touch session: %w", err)
 	}
@@ -188,7 +283,10 @@ func (r *Repository) TouchSession(ctx context.Context, id string, lastSeen time.
 }
 
 func (r *Repository) DeleteSessionByTokenHash(ctx context.Context, tokenHash string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE token_hash = $1`, tokenHash)
+	_, err := r.builder().
+		Delete(tableSessions).
+		Where(squirrel.Eq{sessionColumnTokenHash: tokenHash}).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("delete session: %w", err)
 	}
@@ -198,7 +296,11 @@ func (r *Repository) DeleteSessionByTokenHash(ctx context.Context, tokenHash str
 
 func (r *Repository) DeleteSessionsByUser(ctx context.Context, userID, exceptSessionID string) error {
 	// An empty exceptSessionID matches no row, so every session of the user is removed.
-	_, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = $1 AND id <> $2`, userID, exceptSessionID)
+	_, err := r.builder().
+		Delete(tableSessions).
+		Where(squirrel.Eq{sessionColumnUserID: userID}).
+		Where(squirrel.NotEq{sessionColumnID: exceptSessionID}).
+		ExecContext(ctx)
 	if err != nil {
 		return fmt.Errorf("delete sessions of user: %w", err)
 	}
@@ -207,7 +309,10 @@ func (r *Repository) DeleteSessionsByUser(ctx context.Context, userID, exceptSes
 }
 
 func (r *Repository) DeleteExpiredSessions(ctx context.Context, now time.Time) (int64, error) {
-	result, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= $1`, now)
+	result, err := r.builder().
+		Delete(tableSessions).
+		Where(squirrel.LtOrEq{sessionColumnExpiresAt: now}).
+		ExecContext(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("delete expired sessions: %w", err)
 	}
@@ -224,13 +329,13 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanUser(row rowScanner) (*auth.User, error) {
+func scanUser(row rowScanner, notFound error) (*auth.User, error) {
 	var user auth.User
 
 	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, auth.ErrUserNotFound
+			return nil, notFound
 		}
 
 		return nil, fmt.Errorf("scan user: %w", err)
