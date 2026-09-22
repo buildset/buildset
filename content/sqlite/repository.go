@@ -6,7 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"errors"
 	"fmt"
 	"time"
 
@@ -19,34 +18,6 @@ import (
 var migrations embed.FS
 
 const timeFormat = "2006-01-02T15:04:05.000Z"
-
-const tablePosts = "posts"
-
-const (
-	postColumnID          = "id"
-	postColumnAuthorRef   = "author_ref"
-	postColumnTitle       = "title"
-	postColumnBody        = "body"
-	postColumnContentType = "content_type"
-	postColumnStatus      = "status"
-	postColumnCreatedAt   = "created_at"
-	postColumnUpdatedAt   = "updated_at"
-	postColumnPublishedAt = "published_at"
-)
-
-func postColumns() []string {
-	return []string{
-		postColumnID,
-		postColumnAuthorRef,
-		postColumnTitle,
-		postColumnBody,
-		postColumnContentType,
-		postColumnStatus,
-		postColumnCreatedAt,
-		postColumnUpdatedAt,
-		postColumnPublishedAt,
-	}
-}
 
 type Repository struct {
 	db *sql.DB
@@ -72,155 +43,8 @@ func (r *Repository) builder() squirrel.StatementBuilderType {
 	return squirrel.StatementBuilder.RunWith(r.db)
 }
 
-func (r *Repository) InsertPost(ctx context.Context, post *content.Post) error {
-	_, err := r.builder().
-		Insert(tablePosts).
-		Columns(postColumns()...).
-		Values(
-			post.ID,
-			post.AuthorRef,
-			post.Title,
-			post.Body,
-			post.ContentType,
-			string(post.Status),
-			formatTime(post.CreatedAt),
-			formatTime(post.UpdatedAt),
-			formatOptionalTime(post.PublishedAt),
-		).
-		ExecContext(ctx)
-	if err != nil {
-		return fmt.Errorf("insert post: %w", err)
-	}
-
-	return nil
-}
-
-// UpdatePost deliberately leaves author_ref alone: ownership is immutable.
-func (r *Repository) UpdatePost(ctx context.Context, post *content.Post) error {
-	result, err := r.builder().
-		Update(tablePosts).
-		Set(postColumnTitle, post.Title).
-		Set(postColumnBody, post.Body).
-		Set(postColumnContentType, post.ContentType).
-		Set(postColumnStatus, string(post.Status)).
-		Set(postColumnUpdatedAt, formatTime(post.UpdatedAt)).
-		Set(postColumnPublishedAt, formatOptionalTime(post.PublishedAt)).
-		Where(squirrel.Eq{postColumnID: post.ID}).
-		ExecContext(ctx)
-	if err != nil {
-		return fmt.Errorf("update post: %w", err)
-	}
-
-	return requireOneRow(result, fmt.Errorf("%w: %s", content.ErrPostNotFound, post.ID))
-}
-
-func (r *Repository) DeletePost(ctx context.Context, id string) error {
-	result, err := r.builder().
-		Delete(tablePosts).
-		Where(squirrel.Eq{postColumnID: id}).
-		ExecContext(ctx)
-	if err != nil {
-		return fmt.Errorf("delete post: %w", err)
-	}
-
-	return requireOneRow(result, fmt.Errorf("%w: %s", content.ErrPostNotFound, id))
-}
-
-func (r *Repository) GetPost(ctx context.Context, id string) (*content.Post, error) {
-	row := r.builder().
-		Select(postColumns()...).
-		From(tablePosts).
-		Where(squirrel.Eq{postColumnID: id}).
-		QueryRowContext(ctx)
-
-	return scanPost(row, fmt.Errorf("%w: %s", content.ErrPostNotFound, id))
-}
-
-func (r *Repository) ListPosts(ctx context.Context, filter content.PostFilter) ([]content.Post, error) {
-	query := r.builder().
-		Select(postColumns()...).
-		From(tablePosts)
-
-	if filter.Status != "" {
-		query = query.Where(squirrel.Eq{postColumnStatus: string(filter.Status)})
-	}
-
-	if filter.AuthorRef != "" {
-		query = query.Where(squirrel.Eq{postColumnAuthorRef: filter.AuthorRef})
-	}
-
-	// Newest first, with the identifier as a tiebreak so the order is total and stable.
-	rows, err := query.
-		OrderBy(postColumnCreatedAt+" DESC", postColumnID+" DESC").
-		Limit(uint64(filter.Limit)).
-		QueryContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("select posts: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	posts := make([]content.Post, 0)
-
-	for rows.Next() {
-		post, err := scanPost(rows, content.ErrPostNotFound)
-		if err != nil {
-			return nil, err
-		}
-
-		posts = append(posts, *post)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate posts: %w", err)
-	}
-
-	return posts, nil
-}
-
 type rowScanner interface {
 	Scan(dest ...any) error
-}
-
-func scanPost(row rowScanner, notFound error) (*content.Post, error) {
-	var (
-		post                 content.Post
-		status               string
-		createdAt, updatedAt string
-		publishedAt          sql.NullString
-	)
-
-	err := row.Scan(
-		&post.ID, &post.AuthorRef, &post.Title, &post.Body, &post.ContentType,
-		&status, &createdAt, &updatedAt, &publishedAt,
-	)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, notFound
-		}
-
-		return nil, fmt.Errorf("scan post: %w", err)
-	}
-
-	post.Status = content.Status(status)
-
-	if post.CreatedAt, err = parseTime(createdAt); err != nil {
-		return nil, fmt.Errorf("parse post created_at: %w", err)
-	}
-
-	if post.UpdatedAt, err = parseTime(updatedAt); err != nil {
-		return nil, fmt.Errorf("parse post updated_at: %w", err)
-	}
-
-	if publishedAt.Valid {
-		parsed, err := parseTime(publishedAt.String)
-		if err != nil {
-			return nil, fmt.Errorf("parse post published_at: %w", err)
-		}
-
-		post.PublishedAt = &parsed
-	}
-
-	return &post, nil
 }
 
 func requireOneRow(result sql.Result, notFound error) error {
