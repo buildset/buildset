@@ -1,0 +1,77 @@
+// Package contentapi is the wire shape of the content service's API.
+//
+// It holds types and paths and nothing else, so the service that serves the API and the client
+// that calls it can share one definition without either importing the other.
+package contentapi
+
+import "time"
+
+// Rendering a body is not here. It needs the body and its content type and nothing else, so a
+// consumer renders locally through content/render rather than asking for HTML over the network.
+const (
+	PathGetPost    = "/v1/get-post"
+	PathListPosts  = "/v1/list-posts"
+	PathCreatePost = "/v1/create-post"
+	PathUpdatePost = "/v1/update-post"
+	PathSetStatus  = "/v1/set-status"
+	PathDeletePost = "/v1/delete-post"
+)
+
+type Post struct {
+	// Ref is built by the service that owns it rather than by the consumer, because a consumer
+	// uses it as an authorization key and must not be the one deciding its shape.
+	Ref         string     `json:"ref"`
+	ID          string     `json:"id"`
+	AuthorRef   string     `json:"author_ref"`
+	Title       string     `json:"title"`
+	Body        string     `json:"body"`
+	ContentType string     `json:"content_type"`
+	Status      string     `json:"status"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+}
+
+type PostResponse struct {
+	Post Post `json:"post"`
+}
+
+type GetPostRequest struct {
+	ID string `json:"id"`
+}
+
+type ListPostsRequest struct {
+	Status    string `json:"status"`
+	AuthorRef string `json:"author_ref"`
+	Limit     int    `json:"limit"`
+}
+
+type ListPostsResponse struct {
+	Posts []Post `json:"posts"`
+}
+
+type CreatePostRequest struct {
+	AuthorRef   string `json:"author_ref"`
+	Title       string `json:"title"`
+	Body        string `json:"body"`
+	ContentType string `json:"content_type"`
+}
+
+type UpdatePostRequest struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Body        string `json:"body"`
+	ContentType string `json:"content_type"`
+}
+
+type SetStatusRequest struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+}
+
+type DeletePostRequest struct {
+	ID string `json:"id"`
+}
+
+// Empty is the request or response of an operation that carries nothing.
+type Empty struct{}

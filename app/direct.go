@@ -2,14 +2,16 @@ package app
 
 import (
 	"context"
-	"errors"
 	"html/template"
 
 	"github.com/buildset/buildset/auth"
-	"github.com/buildset/buildset/auth/hash"
+	authhttpapi "github.com/buildset/buildset/auth/httpapi"
 	authui "github.com/buildset/buildset/auth/ui"
 	"github.com/buildset/buildset/authz"
+	authzhttpapi "github.com/buildset/buildset/authz/httpapi"
 	"github.com/buildset/buildset/content"
+	contenthttpapi "github.com/buildset/buildset/content/httpapi"
+	"github.com/buildset/buildset/pkg/httpx"
 	"github.com/buildset/buildset/pkg/ref"
 	"github.com/buildset/buildset/web"
 )
@@ -92,29 +94,33 @@ type directAuthz struct {
 }
 
 func (a directAuthz) Can(ctx context.Context, subject, action, resource string) (bool, error) {
-	return a.service.Can(ctx, subject, action, resource)
+	allowed, err := a.service.Can(ctx, subject, action, resource)
+
+	return allowed, translateAuthzError(err)
 }
 
 func (a directAuthz) Grant(ctx context.Context, subject string, actions []string, resource string) error {
-	return a.service.Grant(ctx, subject, actions, resource)
+	return translateAuthzError(a.service.Grant(ctx, subject, actions, resource))
 }
 
 func (a directAuthz) AssignRole(ctx context.Context, subject, role string) error {
-	return a.service.AssignRole(ctx, subject, role)
+	return translateAuthzError(a.service.AssignRole(ctx, subject, role))
 }
 
 func (a directAuthz) RevokeRole(ctx context.Context, subject, role string) error {
-	return a.service.RevokeRole(ctx, subject, role)
+	return translateAuthzError(a.service.RevokeRole(ctx, subject, role))
 }
 
 func (a directAuthz) SubjectRoles(ctx context.Context, subject string) ([]string, error) {
-	return a.service.SubjectRoles(ctx, subject)
+	roles, err := a.service.SubjectRoles(ctx, subject)
+
+	return roles, translateAuthzError(err)
 }
 
 func (a directAuthz) ListRoles(ctx context.Context) ([]string, error) {
 	roles, err := a.service.ListRoles(ctx)
 	if err != nil {
-		return nil, err
+		return nil, translateAuthzError(err)
 	}
 
 	names := make([]string, 0, len(roles))
@@ -126,11 +132,11 @@ func (a directAuthz) ListRoles(ctx context.Context) ([]string, error) {
 }
 
 func (a directAuthz) PurgeResource(ctx context.Context, resource string) error {
-	return a.service.PurgeResource(ctx, resource)
+	return translateAuthzError(a.service.PurgeResource(ctx, resource))
 }
 
 func (a directAuthz) PurgeSubject(ctx context.Context, subject string) error {
-	return a.service.PurgeSubject(ctx, subject)
+	return translateAuthzError(a.service.PurgeSubject(ctx, subject))
 }
 
 type directContent struct {
@@ -234,35 +240,35 @@ func toWebPost(post *content.Post) *web.Post {
 
 // translateAuthError maps what auth reports onto what web understands. Anything unmapped stays as
 // it is and is treated by web as a failure of the system.
+// The three translators below classify with the same functions the HTTP APIs use, so this binary
+// and the split one turn a given failure into the same sentinel and the same sentence. Anything
+// unclassified passes through, and the site treats it as a failure of the system.
+
 func translateAuthError(err error) error {
-	switch {
-	case err == nil:
-		return nil
-	case errors.Is(err, auth.ErrSessionNotFound), errors.Is(err, auth.ErrUserNotFound):
-		return web.NewError(web.ErrNotFound, "That account could not be found.")
-	case errors.Is(err, auth.ErrUsernameTaken):
-		return web.NewError(web.ErrConflict, "That username is already taken.")
-	case errors.Is(err, auth.ErrInvalidUsername),
-		errors.Is(err, hash.ErrPasswordTooShort),
-		errors.Is(err, hash.ErrPasswordTooLong):
-		return web.NewError(web.ErrInvalidInput, err.Error())
-	default:
-		return err
-	}
+	return translate(err, authhttpapi.Classify)
 }
 
 func translateContentError(err error) error {
-	switch {
-	case err == nil:
+	return translate(err, contenthttpapi.Classify)
+}
+
+func translateAuthzError(err error) error {
+	return translate(err, authzhttpapi.Classify)
+}
+
+func translate(err error, classify func(error) (httpx.Code, string, bool)) error {
+	if err == nil {
 		return nil
-	case errors.Is(err, content.ErrPostNotFound):
-		return web.NewError(web.ErrNotFound, "That post could not be found.")
-	case errors.Is(err, content.ErrInvalidPost),
-		errors.Is(err, content.ErrInvalidStatus),
-		errors.Is(err, content.ErrInvalidTransition),
-		errors.Is(err, content.ErrUnsupportedContent):
-		return web.NewError(web.ErrInvalidInput, err.Error())
-	default:
+	}
+
+	code, message, ok := classify(err)
+	if !ok {
 		return err
 	}
+
+	if translated := web.ErrorFromCode(code, message); translated != nil {
+		return translated
+	}
+
+	return err
 }
