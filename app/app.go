@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/buildset/buildset/pkg/config"
 	"github.com/buildset/buildset/pkg/serve"
 )
 
@@ -99,7 +100,7 @@ func Run(ctx context.Context) error {
 		return fmt.Errorf("load config: %w", err)
 	}
 
-	logger := serve.NewLogger(serve.LogConfig{Level: cfg.LogLevel, JSON: cfg.LogJSON})
+	logger := serve.NewLogger(config.Log{Level: cfg.LogLevel, JSON: cfg.LogJSON})
 	slog.SetDefault(logger)
 
 	application, err := New(ctx, cfg, logger)
