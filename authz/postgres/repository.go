@@ -20,13 +20,6 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// timeFormat sorts lexicographically, so ordering and range queries work on the stored text. The
-// columns holding it are COLLATE "C", which is what makes that true whatever the database locale.
-//
-// TODO: move to timestamptz. Every conversion funnels through formatTime and parseTime, so it is
-// an ALTER per column plus the scan targets in this file.
-const timeFormat = "2006-01-02T15:04:05.000Z"
-
 type Repository struct {
 	db *sql.DB
 }
@@ -154,7 +147,7 @@ func (r *Repository) InsertSubjectRole(ctx context.Context, subject, role string
 	const query = `INSERT INTO subject_roles (subject_ref, role, granted_at) VALUES ($1, $2, $3)
 		ON CONFLICT (subject_ref, role) DO NOTHING`
 
-	if _, err := r.db.ExecContext(ctx, query, subject, role, formatTime(grantedAt)); err != nil {
+	if _, err := r.db.ExecContext(ctx, query, subject, role, grantedAt); err != nil {
 		if isForeignKeyViolation(err) {
 			return authz.ErrUnknownRole
 		}
@@ -187,7 +180,7 @@ func (r *Repository) InsertGrants(ctx context.Context, subject string, actions [
 		ON CONFLICT (subject_ref, action, resource_ref) DO NOTHING`
 
 	for _, action := range actions {
-		if _, err := tx.ExecContext(ctx, query, subject, action, resource, formatTime(grantedAt)); err != nil {
+		if _, err := tx.ExecContext(ctx, query, subject, action, resource, grantedAt); err != nil {
 			return fmt.Errorf("insert grant %q: %w", action, err)
 		}
 	}
@@ -227,10 +220,6 @@ func (r *Repository) DeleteByResource(ctx context.Context, resource string) erro
 	}
 
 	return nil
-}
-
-func formatTime(t time.Time) string {
-	return t.UTC().Format(timeFormat)
 }
 
 var _ authz.Repository = (*Repository)(nil)

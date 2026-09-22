@@ -22,8 +22,6 @@ import (
 	"time"
 )
 
-const timeFormat = "2006-01-02T15:04:05.000Z"
-
 var (
 	ErrChecksumMismatch = errors.New("applied migration has changed on disk")
 	ErrMissingFile      = errors.New("applied migration is missing from disk")
@@ -162,14 +160,14 @@ func (r Runner) applied(ctx context.Context, db queryer) ([]Record, error) {
 	for rows.Next() {
 		var (
 			record    Record
-			appliedAt string
+			appliedAt any
 		)
 
 		if err := rows.Scan(&record.Version, &record.Name, &record.Checksum, &appliedAt); err != nil {
 			return nil, fmt.Errorf("scan applied migration: %w", err)
 		}
 
-		record.AppliedAt, err = time.Parse(timeFormat, appliedAt)
+		record.AppliedAt, err = parseAppliedAt(appliedAt)
 		if err != nil {
 			return nil, fmt.Errorf("parse applied_at of version %d: %w", record.Version, err)
 		}
@@ -207,7 +205,7 @@ func (r Runner) apply(ctx context.Context, db queryer, m migration) error {
 
 	insert := r.dialect().Insert(r.TableName)
 
-	if _, err := tx.ExecContext(ctx, insert, m.version, m.name, m.checksum, time.Now().UTC().Format(timeFormat)); err != nil {
+	if _, err := tx.ExecContext(ctx, insert, m.version, m.name, m.checksum, r.dialect().AppliedAt(time.Now())); err != nil {
 		return fmt.Errorf("record migration: %w", err)
 	}
 

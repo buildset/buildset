@@ -1,4 +1,3 @@
--- Twin of authz/sqlite/migrations/0002_seed_roles.sql, byte-identical below this comment.
 -- These three roles are the blog's vocabulary, seeded here because the service needs a stable set
 -- to assign from. Nothing in authz's code knows these names.
 --
