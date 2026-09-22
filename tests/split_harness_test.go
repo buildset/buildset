@@ -95,7 +95,7 @@ func startAuthz(t *testing.T, logger *slog.Logger, database storage.Config) stri
 	t.Helper()
 
 	service, err := authzapp.New(context.Background(), &authzapp.Config{
-		Server:   config.Server{Port: 8080, ShutdownTimeout: time.Second},
+		Server:   config.Server{Port: "8080", ShutdownTimeout: time.Second},
 		Database: database,
 	}, logger)
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ func startContent(t *testing.T, logger *slog.Logger, database storage.Config) st
 	t.Helper()
 
 	service, err := contentapp.New(context.Background(), &contentapp.Config{
-		Server:   config.Server{Port: 8080, ShutdownTimeout: time.Second},
+		Server:   config.Server{Port: "8080", ShutdownTimeout: time.Second},
 		Database: database,
 	}, logger)
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func startAuth(t *testing.T, logger *slog.Logger, database storage.Config, authz
 	t.Helper()
 
 	service, err := authapp.New(context.Background(), &authapp.Config{
-		Server: config.Server{Port: 8080, ShutdownTimeout: time.Second},
+		Server: config.Server{Port: "8080", ShutdownTimeout: time.Second},
 		// The test server speaks plain HTTP, so a Secure cookie would never come back.
 		Cookie:   config.Cookie{Name: config.SessionCookieName, Secure: false},
 		Database: database,
@@ -145,7 +145,7 @@ func startWeb(t *testing.T, logger *slog.Logger, authURL, authzURL, contentURL s
 	t.Helper()
 
 	site, err := webapp.New(&webapp.Config{
-		Server:      config.Server{Port: 8080, ShutdownTimeout: time.Second},
+		Server:      config.Server{Port: "8080", ShutdownTimeout: time.Second},
 		Cookie:      config.Cookie{Name: config.SessionCookieName, Secure: false},
 		SiteTitle:   "Test Blog",
 		AuthURL:     authURL,

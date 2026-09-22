@@ -9,12 +9,11 @@ import (
 	"os"
 	"os/signal"
 	"slices"
-	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/buildset/buildset/pkg/config"
 	"github.com/joho/godotenv"
-	"github.com/nasermirzaei89/env"
 )
 
 // healthcheckFlag turns the binary into a probe of itself. The service images have no shell, so
@@ -23,11 +22,7 @@ const healthcheckFlag = "-healthcheck"
 
 // Main is every main function in cmd/: load .env, catch a signal, run, report, exit.
 func Main(run func(context.Context) error) {
-	// A missing .env is normal: every setting has a default or comes from the real environment.
-	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
-		fmt.Fprintf(os.Stderr, "load .env: %v\n", err)
-		os.Exit(1)
-	}
+	loadDotEnv()
 
 	if slices.Contains(os.Args[1:], healthcheckFlag) {
 		if err := Healthcheck(); err != nil {
@@ -47,14 +42,26 @@ func Main(run func(context.Context) error) {
 	}
 }
 
-// Healthcheck asks this process's own readiness probe how it is doing. It reads PORT the same way
-// the server does, so the two can never disagree about where to look.
+// loadDotEnv reads .env into the environment, exiting on a malformed file. A missing file is not an
+// error: in production the environment is set by the orchestrator instead.
+func loadDotEnv() {
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(os.Stderr, "load .env: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// Healthcheck asks this process's own readiness probe how it is doing. It loads the server settings
+// the same way the server does, so the two can never disagree about where to look.
 func Healthcheck() error {
-	port := env.GetInt("PORT", 8080)
+	port, err := config.LoadServer().ResolvePort()
+	if err != nil {
+		return err
+	}
 
 	client := &http.Client{Timeout: 2 * time.Second}
 
-	response, err := client.Get("http://127.0.0.1:" + strconv.Itoa(port) + "/readyz")
+	response, err := client.Get("http://127.0.0.1:" + port + "/readyz")
 	if err != nil {
 		return fmt.Errorf("probe readyz: %w", err)
 	}

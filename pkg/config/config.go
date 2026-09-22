@@ -20,29 +20,41 @@ import (
 // the one that reads it are given this value, so neither hard-codes the other's choice.
 const SessionCookieName = "ms_session"
 
-// Server is where and how a process listens.
+// Server is where and how a process listens. Port stays the string the environment gave us: that
+// is what net.Listen wants, and it lets PORT name a service ("http") as well as a number.
 type Server struct {
 	Host            string
-	Port            int
+	Port            string
 	ShutdownTimeout time.Duration
 }
 
 func LoadServer() Server {
 	return Server{
 		Host:            env.GetString("HOST", ""),
-		Port:            env.GetInt("PORT", 8080),
+		Port:            env.GetString("PORT", "8080"),
 		ShutdownTimeout: env.GetDuration("SHUTDOWN_TIMEOUT", 15*time.Second),
 	}
 }
 
 // Address is what the HTTP server listens on. An empty host means every interface.
 func (s Server) Address() string {
-	return net.JoinHostPort(s.Host, strconv.Itoa(s.Port))
+	return net.JoinHostPort(s.Host, s.Port)
+}
+
+// ResolvePort returns Port as a decimal string, resolving a service name if PORT held one. A URL
+// authority may not contain a service name, so anything building one needs this rather than Port.
+func (s Server) ResolvePort() (string, error) {
+	port, err := net.LookupPort("tcp", s.Port)
+	if err != nil {
+		return "", fmt.Errorf("resolve PORT %q: %w", s.Port, err)
+	}
+
+	return strconv.Itoa(port), nil
 }
 
 func (s Server) Validate() error {
-	if s.Port < 1 || s.Port > 65535 {
-		return fmt.Errorf("PORT must be between 1 and 65535, got %d", s.Port)
+	if _, err := s.ResolvePort(); err != nil {
+		return err
 	}
 
 	if s.ShutdownTimeout <= 0 {
