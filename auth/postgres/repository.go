@@ -20,13 +20,6 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// timeFormat sorts lexicographically, so ordering and range queries work on the stored text. The
-// columns holding it are COLLATE "C", which is what makes that true whatever the database locale.
-//
-// TODO: move to timestamptz. Every conversion funnels through formatTime and parseTime, so it is
-// an ALTER per column plus the scan targets in this file.
-const timeFormat = "2006-01-02T15:04:05.000Z"
-
 type Repository struct {
 	db *sql.DB
 }
@@ -53,7 +46,7 @@ func (r *Repository) InsertUser(ctx context.Context, user *auth.User) error {
 
 	_, err := r.db.ExecContext(ctx, query,
 		user.ID, user.Username, user.Name, user.PasswordHash,
-		formatTime(user.CreatedAt), formatTime(user.UpdatedAt),
+		user.CreatedAt, user.UpdatedAt,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -70,7 +63,7 @@ func (r *Repository) UpdateUser(ctx context.Context, user *auth.User) error {
 	const query = `UPDATE users SET username = $1, name = $2, password_hash = $3, updated_at = $4 WHERE id = $5`
 
 	result, err := r.db.ExecContext(ctx, query,
-		user.Username, user.Name, user.PasswordHash, formatTime(user.UpdatedAt), user.ID,
+		user.Username, user.Name, user.PasswordHash, user.UpdatedAt, user.ID,
 	)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -148,7 +141,7 @@ func (r *Repository) InsertSession(ctx context.Context, session *auth.Session) e
 
 	_, err := r.db.ExecContext(ctx, query,
 		session.ID, session.UserID, session.TokenHash,
-		formatTime(session.CreatedAt), formatTime(session.ExpiresAt), formatTime(session.LastSeen),
+		session.CreatedAt, session.ExpiresAt, session.LastSeen,
 		session.UserAgent, session.IP,
 	)
 	if err != nil {
@@ -162,14 +155,11 @@ func (r *Repository) GetSessionByTokenHash(ctx context.Context, tokenHash string
 	const query = `SELECT id, user_id, token_hash, created_at, expires_at, last_seen, user_agent, ip
 		FROM sessions WHERE token_hash = $1`
 
-	var (
-		session                          auth.Session
-		createdAt, expiresAt, lastSeenAt string
-	)
+	var session auth.Session
 
 	err := r.db.QueryRowContext(ctx, query, tokenHash).Scan(
 		&session.ID, &session.UserID, &session.TokenHash,
-		&createdAt, &expiresAt, &lastSeenAt, &session.UserAgent, &session.IP,
+		&session.CreatedAt, &session.ExpiresAt, &session.LastSeen, &session.UserAgent, &session.IP,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -179,27 +169,17 @@ func (r *Repository) GetSessionByTokenHash(ctx context.Context, tokenHash string
 		return nil, fmt.Errorf("select session: %w", err)
 	}
 
-	for _, field := range []struct {
-		raw    string
-		target *time.Time
-	}{
-		{createdAt, &session.CreatedAt},
-		{expiresAt, &session.ExpiresAt},
-		{lastSeenAt, &session.LastSeen},
-	} {
-		parsed, err := parseTime(field.raw)
-		if err != nil {
-			return nil, fmt.Errorf("parse session timestamp: %w", err)
-		}
-
-		*field.target = parsed
-	}
+	// A timestamptz comes back in the session's time zone. The service compares and formats these
+	// as instants, so they are normalised here rather than carrying the server's zone around.
+	session.CreatedAt = session.CreatedAt.UTC()
+	session.ExpiresAt = session.ExpiresAt.UTC()
+	session.LastSeen = session.LastSeen.UTC()
 
 	return &session, nil
 }
 
 func (r *Repository) TouchSession(ctx context.Context, id string, lastSeen time.Time) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE sessions SET last_seen = $1 WHERE id = $2`, formatTime(lastSeen), id)
+	_, err := r.db.ExecContext(ctx, `UPDATE sessions SET last_seen = $1 WHERE id = $2`, lastSeen, id)
 	if err != nil {
 		return fmt.Errorf("touch session: %w", err)
 	}
@@ -227,7 +207,7 @@ func (r *Repository) DeleteSessionsByUser(ctx context.Context, userID, exceptSes
 }
 
 func (r *Repository) DeleteExpiredSessions(ctx context.Context, now time.Time) (int64, error) {
-	result, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= $1`, formatTime(now))
+	result, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= $1`, now)
 	if err != nil {
 		return 0, fmt.Errorf("delete expired sessions: %w", err)
 	}
@@ -245,12 +225,9 @@ type rowScanner interface {
 }
 
 func scanUser(row rowScanner) (*auth.User, error) {
-	var (
-		user                 auth.User
-		createdAt, updatedAt string
-	)
+	var user auth.User
 
-	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.PasswordHash, &createdAt, &updatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.PasswordHash, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, auth.ErrUserNotFound
@@ -259,13 +236,8 @@ func scanUser(row rowScanner) (*auth.User, error) {
 		return nil, fmt.Errorf("scan user: %w", err)
 	}
 
-	if user.CreatedAt, err = parseTime(createdAt); err != nil {
-		return nil, fmt.Errorf("parse user created_at: %w", err)
-	}
-
-	if user.UpdatedAt, err = parseTime(updatedAt); err != nil {
-		return nil, fmt.Errorf("parse user updated_at: %w", err)
-	}
+	user.CreatedAt = user.CreatedAt.UTC()
+	user.UpdatedAt = user.UpdatedAt.UTC()
 
 	return &user, nil
 }
@@ -281,14 +253,6 @@ func requireOneRow(result sql.Result, notFound error) error {
 	}
 
 	return nil
-}
-
-func formatTime(t time.Time) string {
-	return t.UTC().Format(timeFormat)
-}
-
-func parseTime(value string) (time.Time, error) {
-	return time.Parse(timeFormat, value)
 }
 
 var _ auth.Repository = (*Repository)(nil)

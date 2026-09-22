@@ -1,5 +1,3 @@
--- Twin of authz/sqlite/migrations/0001_roles.sql. WITHOUT ROWID has no Postgres equivalent and is
--- dropped; the tables are ordinary heaps with a primary key index, which changes nothing observable.
 CREATE TABLE roles (
     name        text COLLATE "C" NOT NULL PRIMARY KEY,
     description text NOT NULL DEFAULT ''
@@ -17,7 +15,7 @@ CREATE TABLE role_permissions (
 CREATE TABLE subject_roles (
     subject_ref text COLLATE "C" NOT NULL,
     role        text COLLATE "C" NOT NULL REFERENCES roles (name) ON DELETE CASCADE,
-    granted_at  text COLLATE "C" NOT NULL,
+    granted_at  timestamptz NOT NULL,
     PRIMARY KEY (subject_ref, role)
 );
 
@@ -25,7 +23,7 @@ CREATE TABLE grants (
     subject_ref  text COLLATE "C" NOT NULL,
     action       text COLLATE "C" NOT NULL,
     resource_ref text COLLATE "C" NOT NULL,
-    granted_at   text COLLATE "C" NOT NULL,
+    granted_at   timestamptz NOT NULL,
     PRIMARY KEY (subject_ref, action, resource_ref)
 );
 

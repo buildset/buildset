@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/buildset/buildset/content"
 	"github.com/buildset/buildset/pkg/sqlmigrate"
@@ -20,13 +19,6 @@ import (
 
 //go:embed migrations/*.sql
 var migrations embed.FS
-
-// timeFormat sorts lexicographically, so ordering and range queries work on the stored text. The
-// columns holding it are COLLATE "C", which is what makes that true whatever the database locale.
-//
-// TODO: move to timestamptz. Every conversion funnels through formatTime and parseTime, so it is
-// an ALTER per column plus the scan targets in this file.
-const timeFormat = "2006-01-02T15:04:05.000Z"
 
 const postColumns = `id, author_ref, title, body, content_type, status, created_at, updated_at, published_at`
 
@@ -54,7 +46,7 @@ func (r *Repository) InsertPost(ctx context.Context, post *content.Post) error {
 
 	_, err := r.db.ExecContext(ctx, query,
 		post.ID, post.AuthorRef, post.Title, post.Body, post.ContentType, string(post.Status),
-		formatTime(post.CreatedAt), formatTime(post.UpdatedAt), formatOptionalTime(post.PublishedAt),
+		post.CreatedAt, post.UpdatedAt, post.PublishedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("insert post: %w", err)
@@ -70,7 +62,7 @@ func (r *Repository) UpdatePost(ctx context.Context, post *content.Post) error {
 
 	result, err := r.db.ExecContext(ctx, query,
 		post.Title, post.Body, post.ContentType, string(post.Status),
-		formatTime(post.UpdatedAt), formatOptionalTime(post.PublishedAt), post.ID,
+		post.UpdatedAt, post.PublishedAt, post.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update post: %w", err)
@@ -170,15 +162,14 @@ type rowScanner interface {
 
 func scanPost(row rowScanner) (*content.Post, error) {
 	var (
-		post                 content.Post
-		status               string
-		createdAt, updatedAt string
-		publishedAt          sql.NullString
+		post        content.Post
+		status      string
+		publishedAt sql.NullTime
 	)
 
 	err := row.Scan(
 		&post.ID, &post.AuthorRef, &post.Title, &post.Body, &post.ContentType,
-		&status, &createdAt, &updatedAt, &publishedAt,
+		&status, &post.CreatedAt, &post.UpdatedAt, &publishedAt,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -190,40 +181,17 @@ func scanPost(row rowScanner) (*content.Post, error) {
 
 	post.Status = content.Status(status)
 
-	if post.CreatedAt, err = parseTime(createdAt); err != nil {
-		return nil, fmt.Errorf("parse post created_at: %w", err)
-	}
-
-	if post.UpdatedAt, err = parseTime(updatedAt); err != nil {
-		return nil, fmt.Errorf("parse post updated_at: %w", err)
-	}
+	// A timestamptz comes back in the session's time zone. These are instants to everything above
+	// this layer, so they are normalised here rather than carrying the server's zone around.
+	post.CreatedAt = post.CreatedAt.UTC()
+	post.UpdatedAt = post.UpdatedAt.UTC()
 
 	if publishedAt.Valid {
-		parsed, err := parseTime(publishedAt.String)
-		if err != nil {
-			return nil, fmt.Errorf("parse post published_at: %w", err)
-		}
-
-		post.PublishedAt = &parsed
+		published := publishedAt.Time.UTC()
+		post.PublishedAt = &published
 	}
 
 	return &post, nil
-}
-
-func formatTime(t time.Time) string {
-	return t.UTC().Format(timeFormat)
-}
-
-func formatOptionalTime(t *time.Time) any {
-	if t == nil {
-		return nil
-	}
-
-	return formatTime(*t)
-}
-
-func parseTime(value string) (time.Time, error) {
-	return time.Parse(timeFormat, value)
 }
 
 var _ content.Repository = (*Repository)(nil)
