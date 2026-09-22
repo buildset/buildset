@@ -49,7 +49,7 @@ func OpenStores(ctx context.Context, cfg DatabaseConfig) (*Stores, error) {
 	} {
 		db, err := storage.Open(ctx, cfg, target.schema)
 		if err != nil {
-			stores.Close()
+			_ = stores.Close()
 
 			return nil, err
 		}

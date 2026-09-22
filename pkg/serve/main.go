@@ -65,9 +65,9 @@ func Healthcheck() error {
 	if err != nil {
 		return fmt.Errorf("probe readyz: %w", err)
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
-	io.Copy(io.Discard, io.LimitReader(response.Body, 1<<10))
+	_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 1<<10))
 
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("readyz answered %d", response.StatusCode)

@@ -157,7 +157,7 @@ func (r *Repository) ListPosts(ctx context.Context, filter content.PostFilter) (
 	if err != nil {
 		return nil, fmt.Errorf("select posts: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	posts := make([]content.Post, 0)
 

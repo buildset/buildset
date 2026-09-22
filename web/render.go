@@ -110,7 +110,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 func (s *Server) renderError(w http.ResponseWriter, r *http.Request, status int, message string) {

@@ -112,8 +112,8 @@ func (c *Client) Call(ctx context.Context, path string, request, response any) e
 		return c.wrap(path, err)
 	}
 	defer func() {
-		io.Copy(io.Discard, io.LimitReader(httpResponse.Body, maxDrainBytes))
-		httpResponse.Body.Close()
+		_, _ = io.Copy(io.Discard, io.LimitReader(httpResponse.Body, maxDrainBytes))
+		_ = httpResponse.Body.Close()
 	}()
 
 	if httpResponse.StatusCode != http.StatusOK {

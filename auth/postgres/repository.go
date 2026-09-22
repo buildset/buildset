@@ -183,7 +183,7 @@ func (r *Repository) ListUsers(ctx context.Context, limit int) ([]auth.User, err
 	if err != nil {
 		return nil, fmt.Errorf("select users: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	users := make([]auth.User, 0)
 

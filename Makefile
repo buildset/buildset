@@ -1,31 +1,40 @@
+ROOT=$(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+
 BINARY := bin/blog
 
 COMPOSE_PORT := 8080
 
+GO_CMD?=go
 
-.PHONY: build build-all format lint test run compose-up compose-down compose-logs compose-smoke
+GOLANGCI_LINT_CMD?=$(GO_CMD) tool golangci-lint
 
+.DEFAULT_GOAL := .default
+
+.default: format build lint test
+
+.PHONY: help
+help: ## Show help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+.PHONY: build
 build:
-	go build -o $(BINARY) ./cmd/blog
+	$(GO_CMD) build -o bin/ ./cmd/...
 
-build-all:
-	go build -o bin/ ./cmd/...
-
+.PHONY: format
 format:
-	gofmt -s -w .
-	go mod tidy
+	$(GO_CMD) fix $(ROOT)/...
+	$(GOLANGCI_LINT_CMD) fmt $(ROOT)/...
+	$(GO_CMD) mod tidy
 
+.PHONY: lint
 lint:
-	@out="$$(gofmt -s -l .)"; \
-	if [ -n "$$out" ]; then echo "gofmt -s needed:"; echo "$$out"; exit 1; fi
-	go vet ./...
+	$(GOLANGCI_LINT_CMD) run $(ROOT)/...
 
-# The postgres repository tests start their own database in a container, so this needs Docker
-# running and no other setup.
+.PHONY: test
 test:
-	go test -v ./...
+	$(GO_CMD) test ./...
 
-
+.PHONY: run
 run: build
 	./$(BINARY)
 

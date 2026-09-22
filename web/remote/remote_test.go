@@ -96,7 +96,7 @@ func TestResolveSessionOnlyReportsNotFoundWhenTheServiceSaidSo(t *testing.T) {
 			auth := newAuth(t, func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", test.contentType)
 				w.WriteHeader(test.status)
-				w.Write([]byte(test.body))
+				_, _ = w.Write([]byte(test.body))
 			})
 
 			_, err := auth.ResolveSession(t.Context(), "token")

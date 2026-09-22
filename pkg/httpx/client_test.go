@@ -140,7 +140,7 @@ func TestCallOnlyReportsADomainErrorForAWellFormedEnvelope(t *testing.T) {
 			client := newClient(t, func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", test.contentType)
 				w.WriteHeader(test.status)
-				w.Write([]byte(test.body))
+				_, _ = w.Write([]byte(test.body))
 			})
 
 			err := client.Call(t.Context(), "/v1/echo", echoRequest{}, &echoResponse{})

@@ -70,14 +70,14 @@ func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Service, error
 
 	repository, err := newRepository(ctx, cfg.Database.Driver, db)
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, fmt.Errorf("build content repository: %w", err)
 	}
 
 	handler, err := httpapi.NewHandler(content.NewService(repository), logger)
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, fmt.Errorf("build content handler: %w", err)
 	}
@@ -119,7 +119,11 @@ func Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			logger.ErrorContext(ctx, "close service", slog.Any("error", err))
+		}
+	}()
 
 	return serve.Run(ctx, serve.Options{
 		Name:            "content",

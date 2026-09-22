@@ -29,7 +29,7 @@ func newService(t *testing.T) *auth.Service {
 	require.NoError(t, err)
 
 	db.SetMaxOpenConns(1)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	repository, err := sqlite.NewRepository(t.Context(), db)
 	require.NoError(t, err)
@@ -70,7 +70,7 @@ func post(t *testing.T, server *httptest.Server, path string, request any) (int,
 
 	response, err := server.Client().Post(server.URL+path, "application/json", bytes.NewReader(body))
 	require.NoError(t, err)
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 
 	payload, err := io.ReadAll(response.Body)
 	require.NoError(t, err)

@@ -41,7 +41,7 @@ func WriteJSON(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
-	w.Write(body)
+	_, _ = w.Write(body)
 }
 
 // WriteError answers a call the caller got wrong. message is written for a visitor, because it is
@@ -57,7 +57,7 @@ func WriteError(w http.ResponseWriter, code Code, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(code.Status())
-	w.Write(body)
+	_, _ = w.Write(body)
 }
 
 // WriteInternal answers a call this service could not complete. The cause is logged and not sent,

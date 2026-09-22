@@ -19,7 +19,7 @@ func TestRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		db.SetMaxOpenConns(1)
-		t.Cleanup(func() { db.Close() })
+		t.Cleanup(func() { _ = db.Close() })
 
 		repository, err := sqlite.NewRepository(t.Context(), db)
 		require.NoError(t, err)

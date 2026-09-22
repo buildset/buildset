@@ -6,12 +6,12 @@ import "errors"
 // concrete type keeps the driver out of this package's imports, the same way the service layer
 // keeps storage out of its own.
 type sqlStater interface {
+	error
 	SQLState() string
 }
 
 func sqlState(err error) string {
-	var stater sqlStater
-	if errors.As(err, &stater) {
+	if stater, ok := errors.AsType[sqlStater](err); ok {
 		return stater.SQLState()
 	}
 

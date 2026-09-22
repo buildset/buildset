@@ -17,7 +17,7 @@ func TestErrorCarriesContextButDoesNotLeakIt(t *testing.T) {
 	db, err := sql.Open("sqlite", "file:"+t.TempDir()+"/t.db?_pragma=foreign_keys(ON)")
 	require.NoError(t, err)
 	db.SetMaxOpenConns(1)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	repository, err := sqlite.NewRepository(t.Context(), db)
 	require.NoError(t, err)

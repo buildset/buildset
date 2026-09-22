@@ -124,7 +124,7 @@ func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Service, error
 
 	service, routes, err := build(ctx, cfg, db, logger)
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, err
 	}
@@ -240,7 +240,11 @@ func Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer service.Close()
+	defer func() {
+		if err := service.Close(); err != nil {
+			logger.ErrorContext(ctx, "close service", slog.Any("error", err))
+		}
+	}()
 
 	return serve.Run(ctx, serve.Options{
 		Name:            "auth",

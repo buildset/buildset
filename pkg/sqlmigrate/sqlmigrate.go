@@ -92,14 +92,14 @@ func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 	if err != nil {
 		return fmt.Errorf("acquire connection: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	dialect := r.dialect()
 
 	if err := dialect.Lock(ctx, conn, r.TableName); err != nil {
 		return err
 	}
-	defer dialect.Unlock(ctx, conn, r.TableName)
+	defer func() { _ = dialect.Unlock(ctx, conn, r.TableName) }()
 
 	if err := r.createTable(ctx, conn); err != nil {
 		return err
@@ -153,7 +153,7 @@ func (r Runner) applied(ctx context.Context, db queryer) ([]Record, error) {
 	if err != nil {
 		return nil, fmt.Errorf("select applied migrations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var records []Record
 
@@ -197,7 +197,7 @@ func (r Runner) apply(ctx context.Context, db queryer, m migration) error {
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	if _, err := tx.ExecContext(ctx, m.statements); err != nil {
 		return fmt.Errorf("execute statements: %w", err)

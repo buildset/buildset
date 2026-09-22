@@ -18,7 +18,7 @@ func newDatabase(t *testing.T) *sql.DB {
 	require.NoError(t, err)
 
 	db.SetMaxOpenConns(1)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	return db
 }

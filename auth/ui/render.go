@@ -69,7 +69,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, pag
 	// These pages carry credentials and session state, so no cache may keep a copy.
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 func (h *Handler) renderError(w http.ResponseWriter, r *http.Request, status int, message string) {

@@ -68,14 +68,14 @@ func newBrowser(t *testing.T) playwright.Browser {
 		t.Skipf("playwright is not available: %v", err)
 	}
 
-	t.Cleanup(func() { pw.Stop() })
+	t.Cleanup(func() { _ = pw.Stop() })
 
 	browser, err := pw.Chromium.Launch()
 	if err != nil {
 		t.Skipf("chromium is not installed: %v", err)
 	}
 
-	t.Cleanup(func() { browser.Close() })
+	t.Cleanup(func() { _ = browser.Close() })
 
 	return browser
 }
@@ -107,7 +107,7 @@ func newMonoHarness(t *testing.T) *harness {
 
 	application, err := app.New(context.Background(), config, logger)
 	require.NoError(t, err)
-	t.Cleanup(func() { application.Close() })
+	t.Cleanup(func() { _ = application.Close() })
 
 	server := httptest.NewServer(application.Handler())
 	t.Cleanup(server.Close)
@@ -146,7 +146,7 @@ func (h *harness) newPage(t *testing.T) playwright.Page {
 
 	browserContext, err := h.browser.NewContext()
 	require.NoError(t, err)
-	t.Cleanup(func() { browserContext.Close() })
+	t.Cleanup(func() { _ = browserContext.Close() })
 
 	page, err := browserContext.NewPage()
 	require.NoError(t, err)

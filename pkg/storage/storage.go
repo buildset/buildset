@@ -93,7 +93,7 @@ func openSQLite(ctx context.Context, cfg Config) (*sql.DB, error) {
 	db.SetMaxOpenConns(1)
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, fmt.Errorf("ping sqlite database %q: %w", cfg.Path, err)
 	}
@@ -119,7 +119,7 @@ func openPostgres(ctx context.Context, cfg Config, schema string) (*sql.DB, erro
 	db.SetConnMaxIdleTime(5 * time.Minute)
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, fmt.Errorf("ping postgres schema %q: %w", schema, err)
 	}

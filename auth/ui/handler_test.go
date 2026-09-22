@@ -58,7 +58,7 @@ func newHarness(t *testing.T) *harness {
 	require.NoError(t, err)
 
 	db.SetMaxOpenConns(1)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	repository, err := authsqlite.NewRepository(t.Context(), db)
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func (h *harness) get(t *testing.T, path string) *http.Response {
 
 	response, err := h.client.Get(h.server.URL + path)
 	require.NoError(t, err)
-	t.Cleanup(func() { response.Body.Close() })
+	t.Cleanup(func() { _ = response.Body.Close() })
 
 	return response
 }
@@ -124,7 +124,7 @@ func (h *harness) post(t *testing.T, path string, form url.Values) *http.Respons
 
 	response, err := h.client.PostForm(h.server.URL+path, form)
 	require.NoError(t, err)
-	t.Cleanup(func() { response.Body.Close() })
+	t.Cleanup(func() { _ = response.Body.Close() })
 
 	return response
 }

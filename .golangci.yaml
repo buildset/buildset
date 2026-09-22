@@ -1,0 +1,17 @@
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable-all: true
+  disable:
+    - nolintlint
+issues:
+  exclude-dirs:
+    - tmp
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - funlen

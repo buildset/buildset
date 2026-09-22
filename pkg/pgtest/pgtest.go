@@ -77,7 +77,7 @@ func Open(t *testing.T, dsn string) *sql.DB {
 	admin, err := sql.Open("pgx", dsn)
 	require.NoError(t, err)
 
-	defer admin.Close()
+	defer func() { _ = admin.Close() }()
 
 	_, err = admin.ExecContext(t.Context(), `CREATE SCHEMA `+schema)
 	require.NoError(t, err, "create schema %s", schema)
@@ -86,7 +86,7 @@ func Open(t *testing.T, dsn string) *sql.DB {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		scoped.Close()
+		_ = scoped.Close()
 
 		cleanup, err := sql.Open("pgx", dsn)
 		if err != nil {
@@ -94,7 +94,7 @@ func Open(t *testing.T, dsn string) *sql.DB {
 
 			return
 		}
-		defer cleanup.Close()
+		defer func() { _ = cleanup.Close() }()
 
 		// t.Context is already cancelled by the time cleanups run, so this uses its own.
 		if _, err := cleanup.Exec(`DROP SCHEMA ` + schema + ` CASCADE`); err != nil {

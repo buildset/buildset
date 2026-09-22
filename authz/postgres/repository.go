@@ -95,7 +95,7 @@ func (r *Repository) ListRoles(ctx context.Context) ([]authz.Role, error) {
 	if err != nil {
 		return nil, fmt.Errorf("select roles: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	roles := make([]authz.Role, 0)
 
@@ -162,7 +162,7 @@ func (r *Repository) SubjectPatterns(ctx context.Context, subject string) ([]aut
 	if err != nil {
 		return nil, fmt.Errorf("select subject patterns: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	patterns := make([]authz.Pattern, 0)
 
@@ -193,7 +193,7 @@ func (r *Repository) SubjectRoles(ctx context.Context, subject string) ([]string
 	if err != nil {
 		return nil, fmt.Errorf("select subject roles: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	roles := make([]string, 0)
 
@@ -256,7 +256,7 @@ func (r *Repository) InsertGrants(ctx context.Context, subject string, actions [
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	insert := builder().RunWith(tx).
 		Insert(tableGrants).
@@ -285,7 +285,7 @@ func (r *Repository) DeleteBySubject(ctx context.Context, subject string) error 
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	for _, table := range []struct {
 		name   string

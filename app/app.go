@@ -33,14 +33,14 @@ func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Application, e
 
 	svc, err := newServices(ctx, cfg, stores, logger)
 	if err != nil {
-		stores.Close()
+		_ = stores.Close()
 
 		return nil, fmt.Errorf("build services: %w", err)
 	}
 
 	routes, err := Routes(cfg, svc, logger)
 	if err != nil {
-		stores.Close()
+		_ = stores.Close()
 
 		return nil, fmt.Errorf("build http handler: %w", err)
 	}
@@ -107,7 +107,11 @@ func Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer application.Close()
+	defer func() {
+		if err := application.Close(); err != nil {
+			logger.ErrorContext(ctx, "close application", slog.Any("error", err))
+		}
+	}()
 
 	return serve.Run(ctx, application.serveOptions())
 }

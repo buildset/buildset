@@ -78,28 +78,24 @@ func newProxy(t *testing.T, target string) *httputil.ReverseProxy {
 	parsed, err := url.Parse(target)
 	require.NoError(t, err)
 
-	proxy := httputil.NewSingleHostReverseProxy(parsed)
-
-	// The original Host is preserved, because both services set cookies for it.
-	director := proxy.Director
-	proxy.Director = func(r *http.Request) {
-		host := r.Host
-		director(r)
-		r.Host = host
+	return &httputil.ReverseProxy{
+		Rewrite: func(r *httputil.ProxyRequest) {
+			r.SetURL(parsed)
+			// The original Host is preserved, because both services set cookies for it.
+			r.Out.Host = r.In.Host
+		},
 	}
-
-	return proxy
 }
 
 func startAuthz(t *testing.T, logger *slog.Logger, database storage.Config) string {
 	t.Helper()
 
 	service, err := authzapp.New(context.Background(), &authzapp.Config{
-		Server:   config.Server{Port: "8080", ShutdownTimeout: time.Second},
+		Port: "8080", ShutdownTimeout: time.Second,
 		Database: database,
 	}, logger)
 	require.NoError(t, err)
-	t.Cleanup(func() { service.Close() })
+	t.Cleanup(func() { _ = service.Close() })
 
 	return startServer(t, serve.Options{Name: "authz", Logger: logger, Routes: service.Routes(), Ready: service.Ping})
 }
@@ -108,11 +104,11 @@ func startContent(t *testing.T, logger *slog.Logger, database storage.Config) st
 	t.Helper()
 
 	service, err := contentapp.New(context.Background(), &contentapp.Config{
-		Server:   config.Server{Port: "8080", ShutdownTimeout: time.Second},
+		Port: "8080", ShutdownTimeout: time.Second,
 		Database: database,
 	}, logger)
 	require.NoError(t, err)
-	t.Cleanup(func() { service.Close() })
+	t.Cleanup(func() { _ = service.Close() })
 
 	return startServer(t, serve.Options{Name: "content", Logger: logger, Routes: service.Routes(), Ready: service.Ping})
 }
@@ -121,7 +117,7 @@ func startAuth(t *testing.T, logger *slog.Logger, database storage.Config, authz
 	t.Helper()
 
 	service, err := authapp.New(context.Background(), &authapp.Config{
-		Server: config.Server{Port: "8080", ShutdownTimeout: time.Second},
+		Port: "8080", ShutdownTimeout: time.Second,
 		// The test server speaks plain HTTP, so a Secure cookie would never come back.
 		Cookie:   config.Cookie{Name: config.SessionCookieName, Secure: false},
 		Database: database,
@@ -134,7 +130,7 @@ func startAuth(t *testing.T, logger *slog.Logger, database storage.Config, authz
 		HTTPTimeout:      5 * time.Second,
 	}, logger)
 	require.NoError(t, err)
-	t.Cleanup(func() { service.Close() })
+	t.Cleanup(func() { _ = service.Close() })
 
 	return startServer(t, serve.Options{
 		Name: "auth", Logger: logger, Routes: service.Routes(), Ready: service.Ping, CrossOrigin: true,
@@ -145,7 +141,7 @@ func startWeb(t *testing.T, logger *slog.Logger, authURL, authzURL, contentURL s
 	t.Helper()
 
 	site, err := webapp.New(&webapp.Config{
-		Server:      config.Server{Port: "8080", ShutdownTimeout: time.Second},
+		Port: "8080", ShutdownTimeout: time.Second,
 		Cookie:      config.Cookie{Name: config.SessionCookieName, Secure: false},
 		SiteTitle:   "Test Blog",
 		AuthURL:     authURL,
