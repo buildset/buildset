@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 )
 
@@ -85,10 +86,22 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: the post and its ownership grants are written to two services and cannot share a
-	// transaction. A failure here leaves a post its author cannot edit, which needs reconciling.
-	if err := s.deps.Authz.Grant(r.Context(), user.Ref, ownershipActions, post.Ref); err != nil {
-		s.renderInternalError(w, r, err, "grant post ownership")
+	// This one cannot be reordered: the grant needs the post's reference, which only exists once
+	// the post does. Granting is idempotent, so a single retry is safe and covers a dependency
+	// that was briefly unreachable.
+	//
+	// If it still fails, the post exists and its author cannot edit it. Saying "something went
+	// wrong" would invite them to submit the form again and create a second post, so the message
+	// says what actually happened and what to do about it.
+	if err := s.grantPostOwnership(r, user.Ref, post.Ref); err != nil {
+		s.logger.ErrorContext(r.Context(), "grant post ownership",
+			slog.String("user_ref", user.Ref),
+			slog.String("post_ref", post.Ref),
+			slog.Any("error", err),
+		)
+
+		s.renderError(w, r, http.StatusInternalServerError,
+			"The post was saved, but its permissions were not set. Open it from the post list and try again.")
 
 		return
 	}
@@ -170,16 +183,23 @@ func (s *Server) deletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.deps.Content.DeletePost(r.Context(), post.ID); err != nil {
-		s.renderInternalError(w, r, err, "delete post")
-
-		return
-	}
-
+	// The grants go first, and the post second. These are two services and cannot share a
+	// transaction, so one of them will be left standing if the other fails; this is the order
+	// where that state is recoverable. A post that still exists with its grants gone can be
+	// deleted again, and an administrator's access comes from their role rather than from these
+	// grants, so they can still reach it. The other order leaves grants behind with nothing left
+	// to name them.
+	//
 	// Grants pointing at a resource that no longer exists would eventually match a reused
 	// identifier, so they go with it.
 	if err := s.deps.Authz.PurgeResource(r.Context(), post.Ref); err != nil {
 		s.renderInternalError(w, r, err, "purge post grants")
+
+		return
+	}
+
+	if err := s.deps.Content.DeletePost(r.Context(), post.ID); err != nil {
+		s.renderInternalError(w, r, err, "delete post")
 
 		return
 	}
@@ -246,4 +266,18 @@ func nextStatuses(current string) []string {
 	default:
 		return nil
 	}
+}
+
+// grantPostOwnership gives the author the permissions over their own post, retrying once because
+// the operation is idempotent and a post nobody can edit is worse than a repeated call.
+func (s *Server) grantPostOwnership(r *http.Request, userRef, postRef string) error {
+	var err error
+
+	for range 2 {
+		if err = s.deps.Authz.Grant(r.Context(), userRef, ownershipActions, postRef); err == nil {
+			return nil
+		}
+	}
+
+	return err
 }
