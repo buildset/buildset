@@ -27,21 +27,16 @@ const (
 )
 
 type ClientOptions struct {
-	// Timeout bounds one call. The default is five seconds, chosen against the thirty-second
-	// write timeout of a page-serving process: the worst page makes two calls in sequence, so this
-	// leaves room to render an error page rather than drop the browser's connection.
+	// Timeout bounds one call. The five-second default is set against the thirty-second write
+	// timeout of a page-serving process, leaving room to render an error page.
 	Timeout time.Duration
 	// MaxIdleConnsPerHost bounds the pool this client keeps to its one dependency.
 	MaxIdleConnsPerHost int
 }
 
-// Client calls one service.
-//
-// A failed call is not retried. Most of these operations are writes, creating a post is not
-// idempotent, and they sit on a browser request's critical path where a retry turns a slow
-// dependency into a dead one by multiplying its load at the worst moment. The visitor's reload
-// button is the retry. A caller that genuinely needs one, because the operation is idempotent and
-// losing it is worse than repeating it, retries deliberately at its own call site.
+// Client calls one service. A failed call is not retried: most operations are writes on a browser
+// request's critical path, where retrying multiplies a slow dependency's load at the worst moment.
+// A caller that needs one retries deliberately at its own call site.
 type Client struct {
 	service string
 	baseURL string
@@ -84,11 +79,9 @@ func NewClient(service, baseURL string, opts ClientOptions) (*Client, error) {
 	}, nil
 }
 
-// Call sends request as JSON to path and decodes the response into response, which may be nil for
-// an operation that returns nothing.
-//
-// A domain failure comes back as *Error. Everything else comes back as an ordinary wrapped error,
-// and a caller must not mistake one for the other.
+// Call sends request as JSON to path and decodes into response, which may be nil. A domain failure
+// comes back as *Error; everything else is an ordinary wrapped error, and the two must not be
+// mistaken for each other.
 func (c *Client) Call(ctx context.Context, path string, request, response any) error {
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -131,8 +124,7 @@ func (c *Client) Call(ctx context.Context, path string, request, response any) e
 	return nil
 }
 
-// wrap names the service and the path and nothing else. The request body is never included: the
-// identity service takes a live session token in one.
+// The request body is never included: the identity service takes a live session token in one.
 func (c *Client) wrap(path string, err error) error {
 	if err == nil {
 		return nil
@@ -141,11 +133,8 @@ func (c *Client) wrap(path string, err error) error {
 	return fmt.Errorf("%s %s: %w", c.service, path, err)
 }
 
-// decodeError is deliberately strict. Anything it does not positively recognise as a domain
-// failure stays an ordinary error, which no errors.As against *Error will match.
-//
-// That is what keeps "the identity service is down" from being read as "no such session", which is
-// how an access control gets bypassed by an outage.
+// Anything not positively recognised as a domain failure stays an ordinary error, which keeps "the
+// identity service is down" from being read as "no such session".
 func decodeError(response *http.Response) error {
 	switch response.StatusCode {
 	case http.StatusBadRequest, http.StatusNotFound, http.StatusConflict:

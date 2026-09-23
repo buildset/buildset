@@ -78,8 +78,8 @@ func (r *Repository) GetSessionByTokenHash(ctx context.Context, tokenHash string
 		return nil, fmt.Errorf("select session: %w", err)
 	}
 
-	// A timestamptz comes back in the session's time zone. These are instants to everything above
-	// this layer, so they are normalised rather than carrying the server's zone around.
+	// A timestamptz comes back in the session's time zone; everything above this layer wants an
+	// instant.
 	session.CreatedAt = session.CreatedAt.UTC()
 	session.ExpiresAt = session.ExpiresAt.UTC()
 	session.LastSeen = session.LastSeen.UTC()

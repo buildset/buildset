@@ -10,14 +10,13 @@ import (
 	"net/http"
 )
 
-// maxFormBytes caps a form submission. A post body is the largest thing submitted here.
+// maxFormBytes caps a form submission; a post body is the largest thing submitted here.
 const maxFormBytes = 1 << 20
 
 type Config struct {
 	SessionCookieName string
 	SecureCookies     bool
-	// SiteTitle is shown on every page.
-	SiteTitle string
+	SiteTitle         string
 }
 
 // Dependencies are the other services this site composes, each behind an interface it declares.

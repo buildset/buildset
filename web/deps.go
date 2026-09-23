@@ -7,13 +7,11 @@ import (
 	"time"
 )
 
-// The interfaces below are what this service needs from the rest of the system, described in its
-// own terms. They deliberately use types declared here instead of another service's structs, so an
-// implementation that talks HTTP to a remote service can satisfy them without importing it.
-//
-// The composition root supplies the implementations. This package never learns which it got.
+// The interfaces below are what this site needs from the rest of the system. They use types
+// declared here rather than another service's structs, so an implementation that talks HTTP can
+// satisfy them without importing it. The composition root supplies the implementations.
 
-// User is what this service needs to know about a person. It holds no credentials.
+// User is what this site needs to know about a person. It holds no credentials.
 type User struct {
 	Ref string
 	// ID is the identifier inside Ref, carried separately so links do not have to take a reference
@@ -36,10 +34,10 @@ type Post struct {
 	PublishedAt *time.Time
 }
 
-// Post statuses, as strings because they cross a service boundary. The content service owns the
-// lifecycle; this site only needs to name the states it shows.
 const contentTypePlainText = "text/plain"
 
+// Strings because they cross a service boundary. The content service owns the lifecycle; this site
+// only names the states it shows.
 const (
 	StatusDraft     = "draft"
 	StatusPublished = "published"
@@ -63,13 +61,11 @@ type Auth interface {
 	DeleteUser(ctx context.Context, userRef string) error
 	SetupOpen(ctx context.Context) (bool, error)
 
-	// RegisterURL is where somebody who may add an account is sent. Like LoginURL, it belongs to
-	// the identity service, so this site links to it rather than rendering the form itself.
+	// RegisterURL is the identity service's form; this site never renders one.
 	RegisterURL() string
 
-	// LoginURL is where an unauthenticated visitor is sent. It is a method rather than a constant
-	// because an authorization-code flow would return a very different URL from the same call, and
-	// nothing in this package would change.
+	// LoginURL is a method rather than a constant so an authorization-code flow could return a very
+	// different URL without anything here changing.
 	LoginURL(next string) string
 	LogoutURL() string
 	PasswordURL() string

@@ -9,20 +9,18 @@
 		format console
 	}
 
-	# The identity pages are top-level and unprefixed on purpose. Routing them here rather than
-	# giving them a prefix is what puts the whole site on one origin, and one origin is what keeps
-	# the session cookie, the same-origin redirect check and the cross-origin form protection
-	# working exactly as they do in the single binary. Do not add a prefix.
+	# Routing the identity pages here rather than prefixing them puts the whole site on one origin,
+	# which is what keeps the session cookie, the same-origin redirect check and the cross-origin
+	# form protection working. Do not add a prefix.
 	#
-	# These are exact matches, not prefixes: /loginfoo belongs to the site and answers 404 there.
+	# These are exact matches: /loginfoo belongs to the site and answers 404 there.
 	@identity path /setup /login /logout /register /password
 	handle @identity {
 		reverse_proxy auth:8080
 	}
 
-	# The gateway's own liveness. It deliberately does not proxy any service's probe: whether a
-	# service is ready is an operational fact for the container runtime, not something a visitor
-	# gets to ask, and /readyz touches the database.
+	# The gateway's own liveness. No service's probe is proxied: readiness is a fact for the
+	# container runtime, not something a visitor gets to ask, and /readyz touches the database.
 	handle /healthz {
 		respond "ok" 200
 	}
@@ -33,5 +31,5 @@
 	}
 }
 
-# Nothing routes to authz:8080 or content:8080, and nothing routes /v1. Those services are
-# reachable only from the compose network, which is what keeps the internal APIs off the internet.
+# Nothing routes to authz:8080, content:8080 or /v1. Those services are reachable only from the
+# compose network, which keeps the internal APIs off the internet.

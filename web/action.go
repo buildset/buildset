@@ -7,8 +7,8 @@ import (
 	"github.com/buildset/buildset/pkg/ref"
 )
 
-// The actions this site asks about. The vocabulary belongs here: the authorization service stores
-// these strings and attaches no meaning to them.
+// The actions this site asks about. The authorization service stores these strings and attaches no
+// meaning to them.
 const (
 	ActionPostCreate  = "post.create"
 	ActionPostRead    = "post.read"
@@ -21,12 +21,11 @@ const (
 	ActionRoleAssign  = "role.assign"
 )
 
-// ownershipActions are granted to whoever creates a post. Ownership is expressed as grants rather
-// than as an author comparison in a handler, so authorization stays in one place.
+// ownershipActions are granted to whoever creates a post, so ownership stays a matter of grants
+// rather than an author comparison in a handler.
 var ownershipActions = []string{ActionPostRead, ActionPostUpdate, ActionPostDelete, ActionPostPublish}
 
-// administratorRole is the role this site refuses to let someone remove from themselves. The name
-// is the application's, not the authorization service's.
+// administratorRole is the role this site refuses to let someone remove from themselves.
 const administratorRole = "admin"
 
 // Wildcards for questions about a class of resource rather than one of them.
@@ -38,8 +37,7 @@ const (
 	anyUserResource = AnyUserResource
 )
 
-// postResource and userResource build a reference from an identifier taken out of the request
-// path, so they must reject anything that is not one rather than panic on it.
+// The identifier comes out of the request path, so anything malformed must be rejected, not panic.
 func postResource(id string) (string, error) {
 	resource, err := ref.New("content", "post", id)
 	if err != nil {

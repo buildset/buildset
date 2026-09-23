@@ -1,8 +1,5 @@
-// Package httpapi serves the content service over HTTP.
-//
-// Rendering a body is deliberately not an operation here: it needs the body and its content type
-// and nothing else, so a consumer renders locally through content/render instead of spending a
-// round trip on a pure function.
+// Package httpapi serves the content service over HTTP. Rendering a body is deliberately not an
+// operation here: it is a pure function, so a consumer renders locally through content/render.
 package httpapi
 
 import (
@@ -150,8 +147,7 @@ func (h *Handler) fail(w http.ResponseWriter, r *http.Request, operation string,
 	httpx.WriteInternal(r.Context(), w, h.logger, operation, err)
 }
 
-// toWire builds the reference here rather than leaving it to the consumer, because a consumer uses
-// it as an authorization key and this service owns what one looks like.
+// The reference is built here rather than by the consumer, which uses it as an authorization key.
 func toWire(post *content.Post) contentapi.Post {
 	return contentapi.Post{
 		Ref:         post.Ref(),

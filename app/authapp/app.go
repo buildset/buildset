@@ -1,8 +1,6 @@
-// Package authapp is the composition root of the identity service running on its own.
-//
-// It serves two things on one port: the sign-in pages a browser reaches through the gateway, and
-// the small API the site calls. The credential operations stay inside this process, reachable only
-// from the pages, so nothing on the network can create a session or change a password.
+// Package authapp is the composition root of the identity service running on its own. It serves the
+// sign-in pages and the small API the site calls on one port. Credential operations are reachable
+// only from the pages, so nothing on the network can create a session or change a password.
 package authapp
 
 import (
@@ -30,8 +28,7 @@ import (
 // schema is the Postgres schema this service owns. SQLite ignores it.
 const schema = "auth"
 
-// expiredSessionSweepInterval is how often sessions past their expiry are removed. Expiry is
-// already enforced on every lookup; this only keeps the table from growing forever.
+// Expiry is enforced on every lookup; sweeping only keeps the table from growing forever.
 const expiredSessionSweepInterval = time.Hour
 
 type Config struct {
@@ -44,8 +41,7 @@ type Config struct {
 	BcryptCost       int
 	SessionTTL       time.Duration
 	RegistrationOpen bool
-	// AdminRole is the role the first account is given. The name is the application's; the
-	// authorization service only stores the string.
+	// AdminRole is the application's vocabulary; authz only stores the string.
 	AdminRole string
 
 	AuthzURL    string
@@ -92,7 +88,7 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	// bcrypt rejects costs outside [4, 31]; bounding here turns a per-login failure into a boot failure.
+	// bcrypt rejects costs outside [4, 31]; bounding here fails at boot rather than per login.
 	if c.BcryptCost < 10 || c.BcryptCost > 31 {
 		return fmt.Errorf("AUTH_BCRYPT_COST must be between 10 and 31, got %d", c.BcryptCost)
 	}
@@ -108,7 +104,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Service is this binary assembled: storage, the identity service, its pages and its API.
 type Service struct {
 	db      *sql.DB
 	service *auth.Service
@@ -138,8 +133,8 @@ func build(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logger) (*
 		return nil, nil, fmt.Errorf("build bcrypt algorithm: %w", err)
 	}
 
-	// TODO: register argon2id here and make it preferred once it is implemented. Existing bcrypt
-	// hashes keep verifying, and each user is upgraded on their next login.
+	// TODO: register argon2id here and prefer it once implemented. Existing bcrypt hashes keep
+	// verifying, and each user is upgraded on their next login.
 	passwords, err := hash.NewRegistry(bcryptAlgorithm)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build password registry: %w", err)
@@ -175,9 +170,8 @@ func build(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logger) (*
 	}
 
 	mux := http.NewServeMux()
-	// The pages keep the paths they have always had. Routing them at the gateway rather than
-	// prefixing them is what gives the browser one origin, and one origin is what keeps the
-	// session cookie and the same-origin checks working exactly as in the single binary.
+	// The pages keep unprefixed paths. Routing them at the gateway gives the browser one origin,
+	// which is what keeps the session cookie and the same-origin checks working.
 	pages.Register(mux)
 	api.Register(mux)
 
@@ -202,8 +196,7 @@ func (s *Service) Close() error {
 	return nil
 }
 
-// SweepExpiredSessions runs until the context is cancelled. It lives here because the sessions
-// table is this service's.
+// SweepExpiredSessions runs until the context is cancelled.
 func (s *Service) SweepExpiredSessions(ctx context.Context) {
 	ticker := time.NewTicker(expiredSessionSweepInterval)
 	defer ticker.Stop()

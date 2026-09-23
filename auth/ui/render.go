@@ -12,8 +12,7 @@ import (
 //go:embed templates/*.gohtml
 var templateFiles embed.FS
 
-// pageData is what every template in this package receives. One struct keeps the layout's fields
-// available on every page without each handler rebuilding them.
+// pageData is what every template in this package receives.
 type pageData struct {
 	Title            string
 	ErrorMessage     string
@@ -27,8 +26,8 @@ type pageData struct {
 	ForSomeoneElse bool
 }
 
-// parseTemplates builds one template set per page, each with its own copy of the layout, because
-// every page defines the same "content" block.
+// One template set per page, each with its own copy of the layout, because every page defines the
+// same "content" block.
 func parseTemplates() (map[string]*template.Template, error) {
 	names := []string{"setup.gohtml", "login.gohtml", "register.gohtml", "password.gohtml", "error.gohtml"}
 	pages := make(map[string]*template.Template, len(names))
@@ -45,8 +44,8 @@ func parseTemplates() (map[string]*template.Template, error) {
 	return pages, nil
 }
 
-// render writes a page. The template runs into a buffer first so a template failure becomes an
-// error page rather than a truncated one sent with a success status.
+// The template runs into a buffer first, so a failure becomes an error page rather than a
+// truncated one sent with a success status.
 func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, page string, data pageData) {
 	tmpl, ok := h.templates[page]
 	if !ok {

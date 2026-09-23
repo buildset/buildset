@@ -1,8 +1,7 @@
--- These three roles are the blog's vocabulary, seeded here because the service needs a stable set
--- to assign from. Nothing in authz's code knows these names.
+-- The blog's vocabulary, seeded because the service needs a stable set to assign from. Nothing in
+-- authz's code knows these names.
 --
--- TODO: move the seed out to the application once roles are managed through an interface, so this
--- generic service stops shipping one application's role names.
+-- TODO: move the seed out to the application once roles are managed through an interface.
 INSERT INTO roles (name, description) VALUES
     ('admin', 'Full access to every action and resource'),
     ('author', 'May create posts, and holds direct grants over the posts they create'),

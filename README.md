@@ -8,7 +8,7 @@ Status: four services are implemented (`auth`, `authz`, `content`, and `web`), a
 
 ```sh
 cp .env.example .env   # optional, every setting has a default
-make run               # builds bin/blog and starts it
+make run               # builds and starts bin/blog
 ```
 
 Open `http://localhost:8080`. With no accounts yet you are sent to `/setup`, and the account you create there becomes the administrator. Data lands in a SQLite file, `buildset.db` by default.
@@ -19,7 +19,7 @@ Open `http://localhost:8080`. With no accounts yet you are sent to `/setup`, and
 
 ```sh
 make compose-up      # four binaries, Postgres, and a gateway
-make compose-smoke   # checks the arrangement answers through the one published port
+make compose-smoke   # checks it answers through the one published port
 make compose-down
 ```
 

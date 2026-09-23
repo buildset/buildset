@@ -14,8 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// New builds a repository over empty storage. It is called once per subtest, so no test sees
-// another's rows.
+// New builds a repository over empty storage, once per subtest, so no test sees another's rows.
 type New func(t *testing.T) auth.Repository
 
 // Run exercises the whole contract.

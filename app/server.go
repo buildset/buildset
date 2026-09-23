@@ -10,16 +10,12 @@ import (
 	"github.com/buildset/buildset/web"
 )
 
-// Routes builds the root mux. Service handlers are mounted here and nowhere else, which keeps
-// every service unaware that the others are served from the same process.
-//
-// The health probes and the middleware chain are not here: pkg/serve owns those, so this binary
-// and the four split ones answer them identically.
+// Routes mounts every service handler. Health probes and middleware are not here: pkg/serve owns
+// those, so this binary and the split ones answer them identically.
 func Routes(cfg *Config, svc *services, logger *slog.Logger) (http.Handler, error) {
 	mux := http.NewServeMux()
 
-	// Who may create an account is an authorization question, so it is answered here rather than
-	// inside auth. Public sign-up is a configuration switch; otherwise it takes a permission.
+	// Public sign-up is a configuration switch; otherwise creating an account takes a permission.
 	registrationPolicy := authui.RegistrationPolicyFunc(func(ctx context.Context, actorRef string) (bool, error) {
 		if cfg.Auth.RegistrationOpen {
 			return true, nil

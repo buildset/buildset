@@ -2,9 +2,8 @@ package auth
 
 import "context"
 
-// FirstUserHook runs once, when setup creates the very first user. It exists so the first account
-// can be made an administrator without auth knowing that an authorization service exists. The
-// composition root supplies the implementation.
+// FirstUserHook runs once, when setup creates the very first user, so the composition root can make
+// that account an administrator without auth knowing an authorization service exists.
 type FirstUserHook interface {
 	OnFirstUser(ctx context.Context, userRef string) error
 }

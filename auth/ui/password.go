@@ -60,7 +60,7 @@ func (h *Handler) passwordSubmit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/password?changed", http.StatusSeeOther)
 }
 
-// requireSession sends an unauthenticated visitor to the login page and reports that the caller
+// requireSession sends an unauthenticated visitor to the login page and reports whether the caller
 // should stop.
 func (h *Handler) requireSession(w http.ResponseWriter, r *http.Request) (*auth.Session, *auth.User, bool) {
 	session, user, err := h.currentSession(r)

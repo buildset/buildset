@@ -28,12 +28,9 @@ import (
 // the Caddyfile carries, and they are exact matches rather than prefixes.
 var identityPaths = []string{"/setup", "/login", "/logout", "/register", "/password"}
 
-// newSplitHarness boots the four services as four servers and fronts them with a proxy carrying
-// the same routing the gateway does, so the browser sees one origin exactly as it does in compose.
-//
-// The services share one SQLite file here. That is not how they are deployed, but it is not what
-// these tests are about: what a split breaks is the boundary between the processes, and every call
-// between them goes over HTTP.
+// newSplitHarness boots the four services behind a proxy carrying the gateway's routing, so the
+// browser sees one origin as it does in compose. They share one SQLite file, which is not how they
+// are deployed, but what a split breaks is the boundary between the processes.
 func newSplitHarness(t *testing.T) *harness {
 	t.Helper()
 

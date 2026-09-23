@@ -1,8 +1,6 @@
-// Package render turns a stored post body into a fragment safe to place inside a page.
-//
-// It is a leaf on purpose: rendering a body needs the body and its content type and nothing else,
-// no repository and no service. That lets a site rendering pages against a remote content service
-// render locally instead of asking for HTML over the network, while still using these exact rules.
+// Package render turns a stored post body into a fragment safe to place inside a page. It is a leaf
+// on purpose: no repository and no service, so a site running against a remote content service can
+// render locally with these exact rules.
 package render
 
 import (
@@ -17,7 +15,6 @@ const ContentTypePlainText = "text/plain"
 
 var ErrUnsupportedContent = errors.New("unsupported content type")
 
-// HTML turns a stored body into a fragment safe to place inside a page.
 func HTML(contentType, body string) (template.HTML, error) {
 	if err := ValidateContentType(contentType); err != nil {
 		return "", err

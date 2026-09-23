@@ -16,8 +16,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// healthcheckFlag turns the binary into a probe of itself. The service images have no shell, so
-// this is how a container healthcheck asks whether the process inside it is ready.
+// The service images have no shell, so this is how a container healthcheck asks whether the process
+// inside it is ready.
 const healthcheckFlag = "-healthcheck"
 
 // Main is every main function in cmd/: load .env, catch a signal, run, report, exit.
@@ -42,8 +42,7 @@ func Main(run func(context.Context) error) {
 	}
 }
 
-// loadDotEnv reads .env into the environment, exiting on a malformed file. A missing file is not an
-// error: in production the environment is set by the orchestrator instead.
+// A malformed .env exits; a missing one is fine, since production sets the environment elsewhere.
 func loadDotEnv() {
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		fmt.Fprintf(os.Stderr, "load .env: %v\n", err)
@@ -51,8 +50,8 @@ func loadDotEnv() {
 	}
 }
 
-// Healthcheck asks this process's own readiness probe how it is doing. It loads the server settings
-// the same way the server does, so the two can never disagree about where to look.
+// Healthcheck asks this process's own readiness probe, loading the server settings the same way the
+// server does so the two cannot disagree about where to look.
 func Healthcheck() error {
 	port, err := config.LoadServer().ResolvePort()
 	if err != nil {

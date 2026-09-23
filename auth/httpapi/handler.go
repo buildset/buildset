@@ -1,9 +1,6 @@
-// Package httpapi serves the part of the identity service that other services need.
-//
-// Registering, authenticating, creating or revoking a session, changing a password and completing
-// setup are deliberately absent. They are used only by the identity service's own pages, which run
-// in the same process, so nothing reachable over the network can create a session or change a
-// password.
+// Package httpapi serves the part of the identity service that other services need. Registering,
+// authenticating, session creation, password change and setup are deliberately absent: they are
+// reachable only from the service's own pages, in the same process.
 package httpapi
 
 import (
@@ -35,8 +32,8 @@ func NewHandler(service *auth.Service, logger *slog.Logger) (*Handler, error) {
 }
 
 func (h *Handler) Register(mux *http.ServeMux) {
-	// The body of a resolve-session request is a live credential. It is never logged, never
-	// echoed into an error message, and must never be moved into the path or a query string.
+	// The body of a resolve-session request is a live credential: never log it, never echo it into
+	// an error, and never move it into the path or a query string.
 	mux.HandleFunc("POST "+authapi.PathResolveSession, h.resolveSession)
 	mux.HandleFunc("POST "+authapi.PathGetUser, h.getUser)
 	mux.HandleFunc("POST "+authapi.PathListUsers, h.listUsers)
@@ -141,8 +138,8 @@ func (h *Handler) setupOpen(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, authapi.SetupOpenResponse{Open: open})
 }
 
-// userID unwraps a reference into the identifier the service takes. A reference that is not one
-// names no account, which is the same answer as an account that does not exist.
+// A malformed reference names no account, which is the same answer as an account that does not
+// exist.
 func (h *Handler) userID(w http.ResponseWriter, userRef string) (string, bool) {
 	parsed, err := ref.Parse(userRef)
 	if err != nil {
@@ -174,8 +171,7 @@ func (h *Handler) fail(w http.ResponseWriter, r *http.Request, operation string,
 	httpx.WriteInternal(r.Context(), w, h.logger, operation, err)
 }
 
-// toWire carries the four fields a consumer needs. The password hash and the timestamps stay in
-// this service.
+// The password hash and the timestamps stay in this service.
 func toWire(user *auth.User) authapi.User {
 	return authapi.User{
 		Ref:      user.Ref(),

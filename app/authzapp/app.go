@@ -1,6 +1,5 @@
-// Package authzapp is the composition root of the authorization service running on its own.
-//
-// It is a package rather than a main so a test can build the routes without a listener.
+// Package authzapp is the composition root of the authorization service running on its own. It is a
+// package rather than a main so a test can build the routes without a listener.
 package authzapp
 
 import (
@@ -56,7 +55,6 @@ func (c *Config) Validate() error {
 	return c.Database.Validate()
 }
 
-// Service is this binary assembled: storage, the service, and the routes in front of it.
 type Service struct {
 	db     *sql.DB
 	routes http.Handler

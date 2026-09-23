@@ -7,13 +7,9 @@ import (
 	"github.com/buildset/buildset/pkg/httpx"
 )
 
-// Classify is the one place authz's errors become a wire code and a sentence written for a
-// visitor.
-//
-// Both of these are reachable only through a malformed request: a role name that is not in the
-// roles table, or a reference that is not one. They used to reach the site untranslated and render
-// as an internal error, which told a visitor the system had broken when in fact their request had.
-// The in-process adapter uses this too, so both deployments answer the same way.
+// Classify is the one place authz's errors become a wire code and a sentence for a visitor. Both
+// are reachable only through a malformed request, and untranslated they would render as an internal
+// error. The in-process adapter uses this too, so both topologies answer the same way.
 func Classify(err error) (httpx.Code, string, bool) {
 	switch {
 	case err == nil:

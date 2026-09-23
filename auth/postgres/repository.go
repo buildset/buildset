@@ -36,8 +36,7 @@ func NewRepository(ctx context.Context, db *sql.DB) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-// builder is the query builder for this package, and the only place the placeholder style is
-// named.
+// The only place this package names a placeholder style.
 func (r *Repository) builder() squirrel.StatementBuilderType {
 	return squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).RunWith(r.db)
 }

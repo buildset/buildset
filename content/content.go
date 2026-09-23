@@ -34,8 +34,8 @@ const (
 	StatusArchived  Status = "archived"
 )
 
-// transitions is the whole lifecycle. A post leaves the archive as a draft, so republishing is a
-// deliberate act rather than a side effect of unarchiving.
+// A post leaves the archive as a draft, so republishing is deliberate rather than a side effect of
+// unarchiving.
 var transitions = map[Status][]Status{
 	StatusDraft:     {StatusPublished, StatusArchived},
 	StatusPublished: {StatusArchived},
@@ -52,8 +52,7 @@ func ParseStatus(value string) (Status, error) {
 	return status, nil
 }
 
-// canTransition reports whether a post may move between two states. Staying put is allowed, so a
-// resubmitted form does not fail.
+// Staying put is allowed, so a resubmitted form does not fail.
 func canTransition(from, to Status) bool {
 	if from == to {
 		return true

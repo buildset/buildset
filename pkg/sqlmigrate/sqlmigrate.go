@@ -1,10 +1,6 @@
 // Package sqlmigrate applies numbered SQL migration files from an fs.FS and records what it
-// applied. Each storage backend owns its own files and its own bookkeeping table, so no two
-// services ever write the same table.
-//
-// A file is applied inside one transaction together with its bookkeeping row, so a failure leaves
-// nothing half-applied. That also means a statement which cannot run in a transaction, such as
-// CREATE INDEX CONCURRENTLY, can never appear in a migration file.
+// applied. Each storage backend owns its files and its bookkeeping table. A file is applied in one
+// transaction with its bookkeeping row, so CREATE INDEX CONCURRENTLY can never appear in one.
 package sqlmigrate
 
 import (
@@ -50,8 +46,8 @@ func (r Runner) dialect() Dialect {
 	return r.Dialect
 }
 
-// queryer is the part of *sql.DB that this package uses, so the same code runs against a pool or
-// against the single connection Up pins for the duration of a run.
+// The part of *sql.DB this package uses, so the same code runs against a pool or against the single
+// connection Up pins for a run.
 type queryer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
@@ -86,8 +82,8 @@ func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
-	// One connection for the whole run: a session advisory lock is only held by the session that
-	// took it, so the lock and the statements it guards have to share a connection.
+	// A session advisory lock is held only by the session that took it, so the lock and the
+	// statements it guards must share one connection.
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		return fmt.Errorf("acquire connection: %w", err)
@@ -132,8 +128,7 @@ func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 		}
 	}
 
-	// Anything still recorded has no file. Starting against a newer schema than the binary knows
-	// about corrupts data quietly, so refuse instead.
+	// Anything still recorded has no file. Starting against a newer schema corrupts data quietly.
 	for version, record := range byVersion {
 		return fmt.Errorf("%w: version %d (%s)", ErrMissingFile, version, record.Name)
 	}

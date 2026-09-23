@@ -11,12 +11,11 @@ import (
 	"github.com/buildset/buildset/pkg/serve"
 )
 
-// expiredSessionSweepInterval is how often sessions past their expiry are removed. Expiry is
-// already enforced on every lookup; this only keeps the table from growing forever.
+// Expiry is enforced on every lookup; sweeping only keeps the table from growing forever.
 const expiredSessionSweepInterval = time.Hour
 
 // Application is the whole system assembled: configuration, storage, services, and one HTTP
-// handler in front of them. Run serves it; a test can hold it and serve it however it likes.
+// handler in front of them.
 type Application struct {
 	config   *Config
 	logger   *slog.Logger
@@ -48,7 +47,7 @@ func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Application, e
 	return &Application{config: cfg, logger: logger, stores: stores, services: svc, routes: routes}, nil
 }
 
-// Handler is the fully wrapped handler this binary serves, health probes and middleware included.
+// Handler wraps the routes with health probes and middleware.
 func (a *Application) Handler() http.Handler {
 	return serve.Handler(a.serveOptions())
 }

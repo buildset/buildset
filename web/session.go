@@ -24,9 +24,8 @@ func (s *Server) withSession(next http.Handler) http.Handler {
 		user, err := s.deps.Auth.ResolveSession(r.Context(), cookie.Value)
 		if err != nil {
 			if !errors.Is(err, ErrNotFound) {
-				// A failure to reach the identity service must never be read as "anonymous".
-				// Degrading an authentication error into a lesser identity is how access controls
-				// get bypassed, so the request stops here.
+				// A failure to reach the identity service must never be read as "anonymous", so the
+				// request stops here.
 				s.logger.ErrorContext(r.Context(), "resolve session", slog.Any("error", err))
 				s.renderError(w, r, http.StatusServiceUnavailable, "Sign-in is unavailable right now.")
 
@@ -73,8 +72,7 @@ func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (*User, boo
 	return nil, false
 }
 
-// clearSessionCookie mirrors the attributes the auth service sets, which is what a browser needs
-// to consider it the same cookie.
+// The attributes must mirror the ones auth sets, or the browser sees a different cookie.
 func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     s.config.SessionCookieName,

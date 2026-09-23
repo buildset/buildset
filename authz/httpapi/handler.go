@@ -1,7 +1,5 @@
-// Package httpapi serves the authorization service over HTTP.
-//
-// Subjects, actions and resources are opaque strings on the wire exactly as they are in the
-// service, so this handler is almost pure plumbing.
+// Package httpapi serves the authorization service over HTTP. Subjects, actions and resources are
+// opaque strings on the wire exactly as they are in the service.
 package httpapi
 
 import (
@@ -141,7 +139,6 @@ func (h *Handler) purgeSubject(w http.ResponseWriter, r *http.Request) {
 	h.void(w, r, "purge subject", h.service.PurgeSubject(r.Context(), request.Subject))
 }
 
-// void answers an operation that carries nothing back.
 func (h *Handler) void(w http.ResponseWriter, r *http.Request, operation string, err error) {
 	if err != nil {
 		h.fail(w, r, operation, err)
@@ -152,8 +149,8 @@ func (h *Handler) void(w http.ResponseWriter, r *http.Request, operation string,
 	httpx.WriteJSON(w, authzapi.Empty{})
 }
 
-// fail turns a service error into an envelope the caller can act on, or into a failure it must
-// not mistake for an answer.
+// fail turns a service error into an envelope the caller can act on, or into a failure it must not
+// mistake for an answer.
 func (h *Handler) fail(w http.ResponseWriter, r *http.Request, operation string, err error) {
 	if code, message, ok := Classify(err); ok {
 		httpx.WriteError(w, code, message)

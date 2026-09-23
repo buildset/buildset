@@ -15,9 +15,8 @@ func (s *Server) can(ctx context.Context, user *User, action, resource string) (
 	return s.deps.Authz.Can(ctx, user.Ref, action, resource)
 }
 
-// requirePermission stops a request the visitor may not make, and reports whether to continue.
-// A denial on an administration page is a 403; a denial on a public URL is handled by the caller,
-// which answers 404 so the existence of the resource stays hidden.
+// requirePermission reports whether to continue. A denial on an administration page is a 403; on a
+// public URL the caller answers 404, so the existence of the resource stays hidden.
 func (s *Server) requirePermission(w http.ResponseWriter, r *http.Request, action, resource string) (*User, bool) {
 	user, ok := s.requireUser(w, r)
 	if !ok {

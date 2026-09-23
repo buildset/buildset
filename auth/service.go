@@ -81,8 +81,6 @@ type SessionMeta struct {
 	IP        string
 }
 
-// Register creates an account.
-//
 // FIXME: no rate limiting. Registration, login, and password change are all open to unlimited
 // attempts (OWASP ASVS V2.2.1). A limiter keyed by username and client address is the next step.
 func (s *Service) Register(ctx context.Context, req RegisterRequest) (*User, error) {
@@ -246,8 +244,7 @@ func (s *Service) GetUser(ctx context.Context, id string) (*User, error) {
 	return user, nil
 }
 
-// DeleteUser removes an account. Its sessions go with it, so anyone signed in as that account is
-// signed out at once.
+// Sessions go with the account, so anyone signed in as it is signed out at once.
 //
 // TODO: resources this user created in other services still carry their reference. References are
 // opaque and never dereferenced, so nothing breaks, but an operator may want them reassigned.
@@ -351,8 +348,8 @@ func (s *Service) SetupOpen(ctx context.Context) (bool, error) {
 	return count == 0, nil
 }
 
-// CompleteSetup creates the first user and hands its reference to the first-user hook. If the hook
-// fails the user is removed, so setup stays open rather than leaving an account nobody can use.
+// CompleteSetup creates the first user and hands its reference to the first-user hook. A failing
+// hook removes the user, so setup stays open rather than leaving an account nobody can use.
 func (s *Service) CompleteSetup(ctx context.Context, req RegisterRequest) (*User, error) {
 	open, err := s.SetupOpen(ctx)
 	if err != nil {
@@ -390,11 +387,9 @@ func (s *Service) CompleteSetup(ctx context.Context, req RegisterRequest) (*User
 	return user, nil
 }
 
-// rollbackSetup compensates for a failed setup.
-//
-// TODO: this is best-effort, not a transaction. The hook writes to another service, possibly
-// another database, and cross-service transactions are out of scope. A failure here leaves an
-// account with no administrator role, which an operator has to clean up by hand.
+// TODO: best-effort, not a transaction. The hook writes to another service, possibly another
+// database, and cross-service transactions are out of scope. A failure here leaves an account with
+// no administrator role for an operator to clean up by hand.
 func (s *Service) rollbackSetup(ctx context.Context, user *User) {
 	if err := s.repository.DeleteUser(ctx, user.ID); err != nil {
 		s.logger.ErrorContext(ctx, "roll back setup user", slog.String("user_id", user.ID), slog.Any("error", err))

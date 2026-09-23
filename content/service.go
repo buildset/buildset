@@ -115,8 +115,8 @@ func (s *Service) SetStatus(ctx context.Context, id string, status Status) (*Pos
 		return nil, fmt.Errorf("%w: %s to %s", ErrInvalidTransition, post.Status, status)
 	}
 
-	// The first publication date is part of the post's identity to a reader, so a later
-	// republication must not rewrite it.
+	// The first publication date is part of the post's identity to a reader; republishing must not
+	// rewrite it.
 	if status == StatusPublished && post.PublishedAt == nil {
 		published := currentTime()
 		post.PublishedAt = &published
@@ -183,7 +183,6 @@ func (s *Service) ListPosts(ctx context.Context, filter PostFilter) ([]Post, err
 	return posts, nil
 }
 
-// RenderBody is the rendering entry point for a stored post.
 func (s *Service) RenderBody(post *Post) (template.HTML, error) {
 	return RenderHTML(post.ContentType, post.Body)
 }

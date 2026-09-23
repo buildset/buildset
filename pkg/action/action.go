@@ -1,8 +1,6 @@
-// Package action holds the few permission strings that more than one binary names.
-//
-// The vocabulary belongs to the site, and the rest of it stays in web. These two are here because
-// the identity service asks the authorization service who may reach its registration form, and it
-// must not import the site to do so.
+// Package action holds the few permission strings that more than one binary names. The rest of the
+// vocabulary stays in web; these two are here because the identity service asks who may reach its
+// registration form and must not import the site to do so.
 package action
 
 const (

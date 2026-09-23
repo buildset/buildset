@@ -7,8 +7,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// MaxBcryptPasswordLength is bcrypt's input limit in bytes. Longer input is silently truncated by
-// the algorithm, which would let a different password match, so it is rejected instead.
+// bcrypt silently truncates longer input, which would let a different password match, so longer
+// input is rejected instead.
 const MaxBcryptPasswordLength = 72
 
 type Bcrypt struct {

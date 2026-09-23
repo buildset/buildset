@@ -11,8 +11,7 @@ import (
 	"github.com/buildset/buildset/pkg/reqid"
 )
 
-// NewLogger builds the logger every binary uses. The settings live in pkg/config with the rest,
-// so there is one definition of what LOG_LEVEL and LOG_JSON mean.
+// NewLogger builds the logger every binary uses.
 func NewLogger(cfg config.Log) *slog.Logger {
 	opts := &slog.HandlerOptions{Level: cfg.Level}
 
@@ -23,8 +22,7 @@ func NewLogger(cfg config.Log) *slog.Logger {
 		handler = slogcolor.NewHandler(os.Stdout, &slogcolor.Options{
 			Level:      cfg.Level,
 			TimeFormat: time.RFC3339,
-			// Colour is an escape sequence that means nothing in a file or a log collector, so it
-			// is only used when the output is a terminal.
+			// Colour is an escape sequence that means nothing in a file or a log collector.
 			NoColor: !isTerminal(os.Stdout),
 		})
 	}
@@ -32,9 +30,8 @@ func NewLogger(cfg config.Log) *slog.Logger {
 	return slog.New(requestIDHandler{Handler: handler})
 }
 
-// requestIDHandler copies the request identifier out of the context onto every record. Services
-// log through the same logger and never learn that the field exists, so a line from auth and a
-// line from web about one request carry the same identifier.
+// requestIDHandler copies the request identifier out of the context onto every record, so services
+// never learn the field exists and lines about one request still share an identifier.
 type requestIDHandler struct {
 	slog.Handler
 }

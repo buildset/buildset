@@ -1,10 +1,7 @@
 #!/bin/sh
-# Creates one schema and one login role per service. This is the only place the layout is named:
-# the migration files are unqualified and rely on each role's search_path, so a service that later
-# moves to its own database needs no change.
-#
-# It is a shell script rather than a .sql file so the passwords can come from the environment.
-# Postgres runs it once, on an empty data directory.
+# Creates one schema and one login role per service, the only place the layout is named: migration
+# files are unqualified and rely on each role's search_path. It is a shell script rather than .sql
+# so the passwords can come from the environment. Postgres runs it once, on an empty data directory.
 set -eu
 
 psql --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --set ON_ERROR_STOP=1 <<SQL
@@ -26,9 +23,8 @@ ALTER ROLE auth_service IN DATABASE ${POSTGRES_DB} SET search_path = auth;
 ALTER ROLE authz_service IN DATABASE ${POSTGRES_DB} SET search_path = authz;
 ALTER ROLE content_service IN DATABASE ${POSTGRES_DB} SET search_path = content;
 
--- Each service normally creates its own tables and owns them. The single binary connects as the
--- superuser instead, and tables it creates would otherwise be unreadable by the service role that
--- later connects to the same database. These keep both ways of running against one database.
+-- The single binary connects as the superuser, and tables it creates would otherwise be unreadable
+-- by the service role that later connects to the same database.
 ALTER DEFAULT PRIVILEGES FOR ROLE ${POSTGRES_USER} IN SCHEMA auth
     GRANT ALL ON TABLES TO auth_service;
 ALTER DEFAULT PRIVILEGES FOR ROLE ${POSTGRES_USER} IN SCHEMA authz

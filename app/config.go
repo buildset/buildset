@@ -10,17 +10,16 @@ import (
 	"github.com/nasermirzaei89/env"
 )
 
-// SessionCookieName is fixed rather than configurable. Both the service that sets the cookie and
-// the one that reads it are given this value, so neither hard-codes the other's choice.
+// SessionCookieName is fixed rather than configurable, so the service that sets the cookie and the
+// ones that read it cannot disagree.
 const SessionCookieName = config.SessionCookieName
 
-// The storage backends, re-exported so a caller building a Config need not import two packages.
+// Re-exported so a caller building a Config need not import pkg/storage.
 const (
 	DriverSQLite   = storage.DriverSQLite
 	DriverPostgres = storage.DriverPostgres
 )
 
-// DatabaseConfig is this binary's storage settings.
 type DatabaseConfig = storage.Config
 
 type Config struct {
@@ -77,7 +76,7 @@ func LoadAuthConfig() AuthConfig {
 }
 
 func (c AuthConfig) Validate() error {
-	// bcrypt rejects costs outside [4, 31]; bounding here turns a per-login failure into a boot failure.
+	// bcrypt rejects costs outside [4, 31]; bounding here fails at boot rather than per login.
 	if c.BcryptCost < 10 || c.BcryptCost > 31 {
 		return fmt.Errorf("AUTH_BCRYPT_COST must be between 10 and 31, got %d", c.BcryptCost)
 	}

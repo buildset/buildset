@@ -26,8 +26,8 @@ func (s *Server) accountForm(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "account.gohtml", data)
 }
 
-// accountSubmit edits the signed-in visitor's own profile, and only theirs. The reference comes
-// from the session rather than from the form, so there is no identifier to tamper with.
+// The reference comes from the session rather than the form, so there is no identifier to tamper
+// with.
 func (s *Server) accountSubmit(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {

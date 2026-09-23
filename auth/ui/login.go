@@ -65,8 +65,7 @@ func (h *Handler) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, next, http.StatusSeeOther)
 }
 
-// anonymousMayRegister decides whether the sign-in page offers a link to create an account. A
-// policy that cannot answer hides the link rather than failing the page.
+// A policy that cannot answer hides the sign-up link rather than failing the page.
 func (h *Handler) anonymousMayRegister(r *http.Request) bool {
 	allowed, err := h.policy.MayRegister(r.Context(), "")
 	if err != nil {

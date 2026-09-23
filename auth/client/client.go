@@ -1,7 +1,5 @@
-// Package client calls the identity service over HTTP.
-//
-// Only the operations another service needs are here. Registering, authenticating, creating a
-// session and changing a password have no endpoint to call.
+// Package client calls the identity service over HTTP. Only the operations another service needs
+// are here; registering, authenticating, session creation and password change have no endpoint.
 package client
 
 import (
@@ -24,8 +22,8 @@ func New(baseURL string, opts httpx.ClientOptions) (*Client, error) {
 	return &Client{call: call}, nil
 }
 
-// ResolveSession sends a live session token in the request body. It must not be logged, and it
-// must not be moved into the path or a query string, where an access log would keep it.
+// The request body carries a live session token: never log it, and never move it into the path or
+// a query string, where an access log would keep it.
 func (c *Client) ResolveSession(ctx context.Context, token string) (authapi.User, error) {
 	return c.user(ctx, authapi.PathResolveSession, authapi.ResolveSessionRequest{Token: token})
 }

@@ -2,8 +2,7 @@
 //
 //	urn:<service>:<type>:<resource-id>
 //
-// A reference is opaque to every service except the one named in its service segment. This package
-// is the only thing all services share.
+// A reference is opaque to every service except the one named in its service segment.
 package ref
 
 import (
@@ -40,8 +39,8 @@ func New(service, resourceType, id string) (Ref, error) {
 	return r, nil
 }
 
-// MustNew is for references built from values the caller already controls, such as a freshly
-// generated UUID and a compile-time constant service name. It panics on anything else.
+// MustNew is for references built from values the caller already controls, such as a fresh UUID and
+// a constant service name. It panics on anything else.
 func MustNew(service, resourceType, id string) Ref {
 	r, err := New(service, resourceType, id)
 	if err != nil {
@@ -57,8 +56,8 @@ func Parse(s string) (Ref, error) {
 		return Ref{}, fmt.Errorf("%w: want %d colon-separated segments, got %d", ErrInvalid, segmentCount, len(segments))
 	}
 
-	// RFC 8141 makes the scheme case-insensitive on the wire. Every reference we store is produced
-	// by this package, so requiring lowercase keeps string comparison and indexing exact.
+	// RFC 8141 makes the scheme case-insensitive, but every stored reference is produced here, so
+	// requiring lowercase keeps string comparison and indexing exact.
 	if segments[0] != prefix {
 		return Ref{}, fmt.Errorf("%w: want %q prefix, got %q", ErrInvalid, prefix, segments[0])
 	}

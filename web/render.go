@@ -13,8 +13,7 @@ import (
 //go:embed templates/*.gohtml
 var templateFiles embed.FS
 
-// pageNames are every page this site can render. Listing them keeps a typo in a handler a startup
-// problem rather than a runtime one.
+// Listing every page keeps a typo in a handler a startup problem rather than a runtime one.
 var pageNames = []string{
 	"index.gohtml",
 	"post.gohtml",
@@ -75,8 +74,7 @@ func (s *Server) newLayoutData(r *http.Request, title string) layoutData {
 	}
 
 	if user != nil {
-		// The administration link is shown only to someone who can do something there. A failure
-		// to answer hides the link rather than blocking the page.
+		// A failure to answer hides the administration link rather than blocking the page.
 		allowed, err := s.can(r.Context(), user, ActionPostCreate, anyPostResource)
 		if err != nil {
 			s.logger.WarnContext(r.Context(), "check admin visibility", slog.Any("error", err))
@@ -88,8 +86,8 @@ func (s *Server) newLayoutData(r *http.Request, title string) layoutData {
 	return data
 }
 
-// render writes a page. The template runs into a buffer first so a failure halfway through becomes
-// an error page rather than a truncated one already sent with a success status.
+// The template runs into a buffer first, so a failure becomes an error page rather than a truncated
+// one already sent with a success status.
 func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page string, data layoutData) {
 	tmpl, ok := s.templates[page]
 	if !ok {

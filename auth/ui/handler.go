@@ -16,7 +16,7 @@ import (
 	"github.com/buildset/buildset/pkg/safeurl"
 )
 
-// maxFormBytes caps a form submission. These forms are a handful of short fields.
+// maxFormBytes caps a form submission; these forms are a handful of short fields.
 const maxFormBytes = 16 << 10
 
 type Config struct {
@@ -49,8 +49,8 @@ func NewHandler(service *auth.Service, policy RegistrationPolicy, config Config,
 	return &Handler{service: service, policy: policy, config: config, templates: templates, logger: logger}, nil
 }
 
-// Register mounts auth's pages on the given mux. The paths are top-level rather than prefixed, so
-// moving auth to its own host later is a configuration change and not a change to any link.
+// Register mounts auth's pages at top-level paths, so moving auth to its own host later is a
+// configuration change and not a change to any link.
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /setup", h.setupForm)
 	mux.HandleFunc("POST /setup", h.setupSubmit)
@@ -63,8 +63,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /password", h.passwordSubmit)
 }
 
-// LoginURL is the seam that keeps the rest of the system out of auth's routing. Today it points at
-// the page below; an OAuth2 authorization endpoint would be returned from here instead.
+// LoginURL keeps the rest of the system out of auth's routing. An OAuth2 authorization endpoint
+// would be returned from here instead.
 func (h *Handler) LoginURL(next string) string {
 	target := safeurl.Next(next)
 	if target == "/" {
@@ -111,8 +111,8 @@ func (h *Handler) sessionMeta(r *http.Request) auth.SessionMeta {
 	return auth.SessionMeta{UserAgent: r.UserAgent(), IP: host}
 }
 
-// startSession replaces whatever session the browser presented with a brand new one, which is why
-// there is no identifier for an attacker to fix in advance.
+// startSession replaces whatever session the browser presented, so there is no identifier for an
+// attacker to fix in advance.
 func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, user *auth.User) error {
 	if presented := h.sessionToken(r); presented != "" {
 		if err := h.service.RevokeSession(r.Context(), presented); err != nil {
@@ -130,8 +130,7 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, user *aut
 	return nil
 }
 
-// currentUser resolves the presented cookie into a user. An absent or expired session gives a nil
-// user and no error; only a failure to answer at all is an error.
+// An absent or expired session gives a nil user and no error.
 func (h *Handler) currentUser(r *http.Request) (*auth.User, error) {
 	_, user, err := h.currentSession(r)
 	if err != nil {
@@ -145,8 +144,7 @@ func (h *Handler) currentUser(r *http.Request) (*auth.User, error) {
 	return user, nil
 }
 
-// currentSession resolves the presented cookie. An absent or expired session is not an error here;
-// the caller decides what to do about it.
+// An absent or expired session is not an error here; the caller decides what to do about it.
 func (h *Handler) currentSession(r *http.Request) (*auth.Session, *auth.User, error) {
 	token := h.sessionToken(r)
 	if token == "" {

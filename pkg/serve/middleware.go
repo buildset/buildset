@@ -9,11 +9,8 @@ import (
 	"github.com/buildset/buildset/pkg/reqid"
 )
 
-// WithRequestID tags each request so every log line about it can be found together.
-//
-// An inbound identifier is honoured only when trustInbound is set, which is right for an internal
-// API a sibling service calls and wrong for anything a browser can reach: otherwise any client
-// could choose what its requests are filed under, or collide with someone else's.
+// An inbound identifier is honoured only when trustInbound is set: right for an internal API a
+// sibling calls, wrong for anything a browser reaches, where any client could pick its own.
 func WithRequestID(trustInbound bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := ""
@@ -49,8 +46,8 @@ func validRequestID(id string) bool {
 	return true
 }
 
-// RecoverPanics keeps one bad handler from taking the process down, and makes sure the client gets
-// a response rather than a dropped connection.
+// RecoverPanics keeps one bad handler from taking the process down, and answers the client rather
+// than dropping the connection.
 func RecoverPanics(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -65,8 +62,8 @@ func RecoverPanics(logger *slog.Logger, next http.Handler) http.Handler {
 				slog.Any("panic", recovered),
 			)
 
-			// If the handler already started writing, the status is long gone and all we can do is
-			// stop. Writing again would corrupt the response.
+			// If the handler already started writing, this is a no-op; writing again would corrupt
+			// the response.
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 		}()
 
@@ -74,12 +71,9 @@ func RecoverPanics(logger *slog.Logger, next http.Handler) http.Handler {
 	})
 }
 
-// LogRequests records one line per request.
-//
-// It logs the method, the path, the status and the duration, and nothing else. That is deliberate:
-// the identity service takes a live session token in a request body, and a middleware that grew a
-// habit of logging bodies or headers would put credentials in the log of every service that
-// forwards one. Add a field here only after checking what can reach it.
+// Method, path, status and duration, and nothing else: the identity service takes a live session
+// token in a request body, so logging bodies or headers would put credentials in every log. Add a
+// field here only after checking what can reach it.
 func LogRequests(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

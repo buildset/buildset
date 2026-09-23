@@ -9,12 +9,8 @@ import (
 	"github.com/buildset/buildset/pkg/storage"
 )
 
-// Stores holds one handle per service. Each service owns its storage: under SQLite they happen to
-// be the same file, under Postgres they are separate pools with separate schemas, and no service
-// ever learns which it got.
-//
-// They are separate because search_path is a property of a connection and connections are pooled,
-// so three schemas cannot share one pool.
+// Stores holds one handle per service. Under SQLite they are the same file; under Postgres they are
+// separate pools because search_path belongs to a connection and connections are pooled.
 type Stores struct {
 	Auth    *sql.DB
 	Authz   *sql.DB
@@ -23,8 +19,7 @@ type Stores struct {
 	closers []*sql.DB
 }
 
-// OpenStores connects each service's storage. It runs no migrations: each backend owns its own
-// schema and migrates itself when it is wired up.
+// OpenStores runs no migrations: each backend migrates itself when it is wired up.
 func OpenStores(ctx context.Context, cfg DatabaseConfig) (*Stores, error) {
 	if cfg.Driver == storage.DriverSQLite {
 		db, err := storage.Open(ctx, cfg, "")
@@ -32,8 +27,7 @@ func OpenStores(ctx context.Context, cfg DatabaseConfig) (*Stores, error) {
 			return nil, err
 		}
 
-		// One file for all three. The boundary between them is a convention here, not something
-		// the database enforces; running the services apart is what makes it real.
+		// One file for all three; the boundary is a convention, not something the database enforces.
 		return &Stores{Auth: db, Authz: db, Content: db, closers: []*sql.DB{db}}, nil
 	}
 
@@ -61,7 +55,7 @@ func OpenStores(ctx context.Context, cfg DatabaseConfig) (*Stores, error) {
 	return stores, nil
 }
 
-// Ping reports whether every store is reachable. It backs the readiness probe.
+// Ping reports whether every store is reachable.
 func (s *Stores) Ping(ctx context.Context) error {
 	for _, db := range s.closers {
 		if err := db.PingContext(ctx); err != nil {

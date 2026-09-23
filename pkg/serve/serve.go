@@ -1,9 +1,6 @@
-// Package serve is the part of running a service that has nothing to do with what the service
-// does: a logger, a listener with sane timeouts, request tagging, panic recovery, request logging,
-// liveness and readiness, and a shutdown that finishes what it started.
-//
-// It exists so that splitting a service into its own binary does not mean copying this, which is
-// how four binaries drift apart.
+// Package serve is the part of running a service that has nothing to do with what the service does:
+// a logger, a listener with sane timeouts, request tagging, panic recovery, request logging, health
+// probes and a graceful shutdown. Sharing it keeps the binaries from drifting apart.
 package serve
 
 import (
@@ -24,16 +21,13 @@ type Options struct {
 	ShutdownTimeout time.Duration
 	Logger          *slog.Logger
 
-	// Routes are the service's own paths. The health probes are added here so no service has to
-	// remember them and so they answer identically in every binary.
+	// Routes are the service's own paths. The health probes are added here, so they answer
+	// identically in every binary.
 	Routes http.Handler
 
-	// Ready backs /readyz. Nil means the process is ready as soon as it is listening, which is the
-	// right answer for a binary with no storage of its own.
-	//
-	// It must not check a dependency. If web's readiness followed auth's, restarting auth would
-	// mark web unready too and the gateway would have nothing to route to, turning one service's
-	// blip into a full outage.
+	// Ready backs /readyz. Nil means ready as soon as it is listening, which is right for a binary
+	// with no storage. It must not check a dependency: if web's readiness followed auth's,
+	// restarting auth would leave the gateway nothing to route to.
 	Ready func(ctx context.Context) error
 
 	// CrossOrigin applies http.CrossOriginProtection. True for a binary a browser reaches, false
@@ -48,12 +42,11 @@ type Options struct {
 	Background []func(context.Context)
 }
 
-// readyTimeout bounds a readiness probe, so a wedged database makes the probe fail rather than
-// pile up connections.
+// A wedged database must fail the probe rather than pile up connections.
 const readyTimeout = 2 * time.Second
 
-// Handler assembles the routes, the health probes and the middleware into the handler this process
-// serves. It is separated from Run so a test can drive it without a listener.
+// Handler assembles the routes, the health probes and the middleware. It is separate from Run so a
+// test can drive it without a listener.
 func Handler(opts Options) http.Handler {
 	mux := http.NewServeMux()
 
@@ -93,8 +86,7 @@ func Handler(opts Options) http.Handler {
 		handler = http.NewCrossOriginProtection().Handler(handler)
 	}
 
-	// Request tagging, logging and panic recovery are a property of the process rather than of any
-	// service in it. The identifier is applied first so everything below can log it.
+	// The identifier is applied first so everything below it can log it.
 	return WithRequestID(opts.TrustRequestID, RecoverPanics(opts.Logger, LogRequests(opts.Logger, handler)))
 }
 

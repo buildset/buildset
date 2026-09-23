@@ -6,14 +6,9 @@ import (
 	"github.com/buildset/buildset/pkg/safeurl"
 )
 
-// URLs are the identity service's pages.
-//
-// They are configuration rather than calls because they are pure strings, and because rendering a
-// page must not stall on a network round trip to learn where its own sign-in link points.
-//
-// With a gateway putting both services on one origin these stay relative, exactly as the identity
-// service builds them itself, which is what keeps the session cookie and the same-origin checks
-// working as they do in the single binary.
+// URLs are the identity service's pages. They are configuration rather than calls so rendering a
+// page never stalls on a round trip, and they stay relative because the gateway puts both services
+// on one origin, which is what keeps the session cookie and the same-origin checks working.
 type URLs struct {
 	Login    string
 	Logout   string
@@ -31,10 +26,8 @@ func DefaultURLs() URLs {
 	}
 }
 
-// LoginURL is where an unauthenticated visitor is sent.
-//
-// The redirect target goes through the same check the identity service applies to it, from the
-// same package, so the guarantee cannot hold on one side of the gateway and not the other.
+// The redirect target goes through the same check the identity service applies, from the same
+// package, so the guarantee cannot hold on one side of the gateway and not the other.
 func (u URLs) LoginURL(next string) string {
 	target := safeurl.Next(next)
 	if target == "/" {

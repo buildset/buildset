@@ -5,11 +5,8 @@ import "strings"
 // wildcard matches the rest of a value, and only at the end of a pattern.
 const wildcard = "*"
 
-// matches compares one stored pattern against one concrete value.
-//
-// Matching happens here rather than in SQL because GLOB, LIKE, and a future in-memory backend
-// disagree about escaping and case. Keeping it in Go makes the rule identical on every backend and
-// testable without a database.
+// Matching happens in Go rather than SQL because GLOB, LIKE and a future in-memory backend disagree
+// about escaping and case. Here the rule is identical on every backend and testable without one.
 func matches(pattern, value string) bool {
 	if pattern == wildcard {
 		return true

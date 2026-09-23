@@ -1,7 +1,6 @@
-// Package config holds the settings blocks that more than one binary needs, so five composition
-// roots share one definition of what PORT or DATABASE_DSN means instead of five that drift.
-//
-// A binary embeds the blocks it needs and adds its own fields; nothing here knows the whole set.
+// Package config holds the settings blocks that more than one binary needs, so the composition
+// roots share one definition of what PORT or DATABASE_DSN means. A binary embeds the blocks it
+// needs and adds its own fields.
 package config
 
 import (
@@ -16,12 +15,12 @@ import (
 	"github.com/nasermirzaei89/env"
 )
 
-// SessionCookieName is fixed rather than configurable. Both the service that sets the cookie and
-// the one that reads it are given this value, so neither hard-codes the other's choice.
+// SessionCookieName is fixed rather than configurable, so the service that sets the cookie and the
+// ones that read it cannot disagree.
 const SessionCookieName = "ms_session"
 
-// Server is where and how a process listens. Port stays the string the environment gave us: that
-// is what net.Listen wants, and it lets PORT name a service ("http") as well as a number.
+// Port stays the string the environment gave: that is what net.Listen wants, and it lets PORT name
+// a service ("http") as well as a number.
 type Server struct {
 	Host            string
 	Port            string
@@ -41,8 +40,8 @@ func (s Server) Address() string {
 	return net.JoinHostPort(s.Host, s.Port)
 }
 
-// ResolvePort returns Port as a decimal string, resolving a service name if PORT held one. A URL
-// authority may not contain a service name, so anything building one needs this rather than Port.
+// ResolvePort resolves a service name in PORT to a number. A URL authority may not contain a
+// service name, so anything building one needs this rather than Port.
 func (s Server) ResolvePort() (string, error) {
 	port, err := net.LookupPort("tcp", s.Port)
 	if err != nil {
@@ -64,7 +63,6 @@ func (s Server) Validate() error {
 	return nil
 }
 
-// Log is how a process writes its logs.
 type Log struct {
 	Level slog.Level
 	JSON  bool
@@ -79,8 +77,8 @@ func LoadLog() (Log, error) {
 	return Log{Level: level, JSON: env.GetBool("LOG_JSON", false)}, nil
 }
 
-// Cookie is the session cookie contract, shared by the binary that sets it and the one that reads
-// it. They must agree, or a signed-in visitor looks anonymous to half the system.
+// Cookie is shared by the binary that sets the session cookie and the ones that read it. They must
+// agree, or a signed-in visitor looks anonymous to half the system.
 type Cookie struct {
 	Name   string
 	Secure bool
@@ -93,8 +91,7 @@ func LoadCookie() Cookie {
 	}
 }
 
-// LoadURL reads the base URL of a dependency. A missing or malformed value is a start-up failure
-// rather than a 500 on a visitor's first click.
+// A missing or malformed value is a start-up failure rather than a 500 on a visitor's first click.
 func LoadURL(key string) (string, error) {
 	raw := env.GetString(key, "")
 	if raw == "" {

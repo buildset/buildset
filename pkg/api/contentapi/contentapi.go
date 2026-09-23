@@ -1,13 +1,11 @@
-// Package contentapi is the wire shape of the content service's API.
-//
-// It holds types and paths and nothing else, so the service that serves the API and the client
-// that calls it can share one definition without either importing the other.
+// Package contentapi is the wire shape of the content service's API: types and paths only, so the
+// service and its client share one definition without either importing the other.
 package contentapi
 
 import "time"
 
-// Rendering a body is not here. It needs the body and its content type and nothing else, so a
-// consumer renders locally through content/render rather than asking for HTML over the network.
+// Rendering a body is not here: it is a pure function, so a consumer renders locally through
+// content/render.
 const (
 	PathGetPost    = "/v1/get-post"
 	PathListPosts  = "/v1/list-posts"
@@ -18,8 +16,8 @@ const (
 )
 
 type Post struct {
-	// Ref is built by the service that owns it rather than by the consumer, because a consumer
-	// uses it as an authorization key and must not be the one deciding its shape.
+	// Ref is built by the owning service: a consumer uses it as an authorization key and must not
+	// decide its shape.
 	Ref         string     `json:"ref"`
 	ID          string     `json:"id"`
 	AuthorRef   string     `json:"author_ref"`

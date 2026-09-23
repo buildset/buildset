@@ -9,11 +9,8 @@ import (
 	"github.com/Masterminds/squirrel"
 )
 
-// union runs two selects as one UNION.
-//
-// squirrel has no vocabulary for UNION, so the two halves are rendered and joined here. Both are
-// still built rather than written, which is what keeps the arguments ordered and the placeholders
-// numbered correctly.
+// squirrel has no vocabulary for UNION, so the halves are built separately and joined here, which
+// keeps the arguments ordered and the placeholders numbered correctly.
 func union(ctx context.Context, db squirrel.QueryerContext, format squirrel.PlaceholderFormat, parts ...squirrel.SelectBuilder) (*sql.Rows, error) {
 	var (
 		clauses   []string
@@ -30,8 +27,7 @@ func union(ctx context.Context, db squirrel.QueryerContext, format squirrel.Plac
 		arguments = append(arguments, args...)
 	}
 
-	// The parts are built with ? placeholders and renumbered once, here, so each half stays
-	// unaware of how many arguments the other contributed.
+	// Renumbered once, here, so each half stays unaware of how many arguments the other contributed.
 	query, err := format.ReplacePlaceholders(strings.Join(clauses, " UNION "))
 	if err != nil {
 		return nil, fmt.Errorf("replace placeholders: %w", err)

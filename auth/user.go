@@ -23,8 +23,8 @@ func (u *User) Ref() string {
 type Session struct {
 	ID     string
 	UserID string
-	// TokenHash is the SHA-256 of the token handed to the browser. The token itself is never
-	// stored, so a copy of the database does not hand over live sessions.
+	// TokenHash is the SHA-256 of the token handed to the browser. The token is never stored, so a
+	// copy of the database does not hand over live sessions.
 	TokenHash string
 	CreatedAt time.Time
 	// ExpiresAt is absolute, not sliding. A stolen token that is in constant use still dies.

@@ -1,7 +1,6 @@
-// Package webapp is the composition root of the site running on its own.
-//
-// It has no database. Everything it shows it asks another service for, through the adapters in
-// web/remote, so this binary links no service code, no password hashing and no SQL driver.
+// Package webapp is the composition root of the site running on its own. It has no database and
+// asks other services for everything through web/remote, so it links no service code, no password
+// hashing and no SQL driver.
 package webapp
 
 import (
@@ -35,8 +34,7 @@ type Config struct {
 	ContentURL  string
 	HTTPTimeout time.Duration
 
-	// URLs are the identity service's pages. They stay relative because the gateway puts both
-	// services on one origin.
+	// The identity service's pages, relative because the gateway puts both services on one origin.
 	URLs remote.URLs
 }
 
@@ -77,8 +75,7 @@ func LoadConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// loadURLs keeps the identity service's paths configurable, so moving a page is a setting rather
-// than a release of two binaries.
+// Keeping these configurable makes moving a page a setting rather than a release of two binaries.
 func loadURLs() remote.URLs {
 	defaults := remote.DefaultURLs()
 
@@ -102,7 +99,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Site is this binary assembled: three clients and the routes in front of them.
 type Site struct {
 	routes http.Handler
 }
@@ -163,11 +159,9 @@ func Run(ctx context.Context) error {
 		ShutdownTimeout: cfg.ShutdownTimeout,
 		Logger:          logger,
 		Routes:          site.Routes(),
-		// Ready is deliberately nil. This binary has no storage, and its readiness must not follow
-		// its dependencies': if it did, restarting the identity service would mark the site
-		// unready too and the gateway would have nothing to route to, turning one service's blip
-		// into a full outage. A dependency being down is answered per request, not by refusing to
-		// serve at all.
+		// Ready is deliberately nil. Following a dependency's readiness would make restarting the
+		// identity service leave the gateway nothing to route to. A dependency being down is
+		// answered per request.
 		Ready: nil,
 		// A browser posts forms here, so cross-origin protection applies and an inbound request
 		// identifier must not be trusted.

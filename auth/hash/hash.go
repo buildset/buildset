@@ -1,8 +1,6 @@
-// Package hash turns passwords into storable strings and checks them again.
-//
-// Stored hashes carry their algorithm in a leading "$name$" segment, so a Registry can verify a
-// hash written by an algorithm that is no longer the preferred one. That is what makes replacing
-// bcrypt with argon2id a configuration change rather than a forced password reset.
+// Package hash turns passwords into storable strings and checks them again. Stored hashes carry
+// their algorithm in a leading "$name$" segment, so a Registry can still verify a hash written by a
+// superseded algorithm. That makes replacing bcrypt a configuration change, not a password reset.
 package hash
 
 import (

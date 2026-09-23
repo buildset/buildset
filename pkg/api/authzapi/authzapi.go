@@ -1,7 +1,5 @@
-// Package authzapi is the wire shape of the authorization service's API.
-//
-// It holds types and paths and nothing else, so the service that serves the API and the clients
-// that call it can share one definition without any of them importing another.
+// Package authzapi is the wire shape of the authorization service's API: types and paths only, so
+// the service and its clients share one definition without any of them importing another.
 package authzapi
 
 const (
@@ -44,8 +42,7 @@ type ResourceRequest struct {
 	Resource string `json:"resource"`
 }
 
-// RolesResponse carries role names only. A description has no consumer, and the in-process adapter
-// has always dropped it too.
+// Role names only; a description has no consumer.
 type RolesResponse struct {
 	Roles []string `json:"roles"`
 }

@@ -2,12 +2,8 @@ package ui
 
 import "context"
 
-// RegistrationPolicy decides who may create an account. It exists so this package can keep the
-// registration form, which handles a password, while the decision about who is allowed to use it
-// is made elsewhere. The composition root supplies the implementation, and auth stays unaware that
-// an authorization service exists.
-//
-// actorRef is the signed-in visitor, or empty for an anonymous one.
+// RegistrationPolicy decides who may create an account, so this package can keep the registration
+// form while the decision is made elsewhere. actorRef is the signed-in visitor, empty if anonymous.
 type RegistrationPolicy interface {
 	MayRegister(ctx context.Context, actorRef string) (bool, error)
 }

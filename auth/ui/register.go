@@ -8,10 +8,8 @@ import (
 )
 
 // registrationGate answers 404 when this visitor may not create an account, so a closed instance
-// does not advertise the route to strangers.
-//
-// It returns the signed-in visitor, if there is one. An administrator reaching this page is adding
-// somebody else's account, which is a different outcome from a stranger signing themselves up.
+// does not advertise the route. It returns the signed-in visitor, if there is one: an administrator
+// here is adding somebody else's account, not signing themselves up.
 func (h *Handler) registrationGate(w http.ResponseWriter, r *http.Request) (*auth.User, bool) {
 	actor, err := h.currentUser(r)
 	if err != nil {
@@ -53,7 +51,6 @@ func (h *Handler) registerForm(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// registerTitle distinguishes signing yourself up from adding an account for somebody else.
 func registerTitle(actor *auth.User) string {
 	if actor != nil {
 		return "Add a user"

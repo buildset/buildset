@@ -9,8 +9,8 @@ type Repository interface {
 	ListRoles(ctx context.Context) ([]Role, error)
 	RoleExists(ctx context.Context, role string) (bool, error)
 
-	// SubjectPatterns returns every permission a subject holds, from its roles and its direct
-	// grants together. The service decides which of them match.
+	// SubjectPatterns returns every permission a subject holds, from roles and direct grants alike.
+	// The service decides which of them match.
 	SubjectPatterns(ctx context.Context, subject string) ([]Pattern, error)
 	SubjectRoles(ctx context.Context, subject string) ([]string, error)
 

@@ -61,8 +61,8 @@ func (s *Server) newPostForm(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "admin_post_form.gohtml", data)
 }
 
-// createPost writes the post and then grants its author the rights over it. Ownership is a set of
-// grants rather than a comparison in a handler, which is what keeps authorization in one service.
+// Ownership is a set of grants rather than a comparison in a handler, which keeps authorization in
+// one service.
 func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requirePermission(w, r, ActionPostCreate, anyPostResource)
 	if !ok {
@@ -86,13 +86,9 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// This one cannot be reordered: the grant needs the post's reference, which only exists once
-	// the post does. Granting is idempotent, so a single retry is safe and covers a dependency
-	// that was briefly unreachable.
-	//
-	// If it still fails, the post exists and its author cannot edit it. Saying "something went
-	// wrong" would invite them to submit the form again and create a second post, so the message
-	// says what actually happened and what to do about it.
+	// The grant needs the post's reference, so it cannot come first. If it still fails, the post
+	// exists and its author cannot edit it: saying "something went wrong" would invite a second
+	// submission, so the message says what actually happened.
 	if err := s.grantPostOwnership(r, user.Ref, post.Ref); err != nil {
 		s.logger.ErrorContext(r.Context(), "grant post ownership",
 			slog.String("user_ref", user.Ref),
@@ -183,15 +179,9 @@ func (s *Server) deletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The grants go first, and the post second. These are two services and cannot share a
-	// transaction, so one of them will be left standing if the other fails; this is the order
-	// where that state is recoverable. A post that still exists with its grants gone can be
-	// deleted again, and an administrator's access comes from their role rather than from these
-	// grants, so they can still reach it. The other order leaves grants behind with nothing left
-	// to name them.
-	//
-	// Grants pointing at a resource that no longer exists would eventually match a reused
-	// identifier, so they go with it.
+	// Two services cannot share a transaction, so grants go first: a post whose grants are gone can
+	// be deleted again by an administrator, whose access comes from their role. The other order
+	// leaves grants behind that a reused identifier would eventually match.
 	if err := s.deps.Authz.PurgeResource(r.Context(), post.Ref); err != nil {
 		s.renderInternalError(w, r, err, "purge post grants")
 
@@ -207,8 +197,7 @@ func (s *Server) deletePost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/posts", http.StatusSeeOther)
 }
 
-// authorizePost loads the post named in the path and checks one permission over it. A post that
-// does not exist and one the visitor may not touch both answer the same way.
+// A post that does not exist and one the visitor may not touch answer the same way.
 func (s *Server) authorizePost(w http.ResponseWriter, r *http.Request, action string) (*Post, bool) {
 	id := r.PathValue("id")
 
@@ -253,8 +242,8 @@ func (s *Server) renderPostFormError(w http.ResponseWriter, r *http.Request, err
 	s.render(w, r, http.StatusBadRequest, "admin_post_form.gohtml", data)
 }
 
-// nextStatuses mirrors the content service's lifecycle so the form offers only moves it accepts.
-// The service enforces the rule; this only keeps the page from offering a button that fails.
+// nextStatuses mirrors the content service's lifecycle. The service enforces the rule; this only
+// keeps the page from offering a button that fails.
 func nextStatuses(current string) []string {
 	switch current {
 	case StatusDraft:
@@ -268,8 +257,7 @@ func nextStatuses(current string) []string {
 	}
 }
 
-// grantPostOwnership gives the author the permissions over their own post, retrying once because
-// the operation is idempotent and a post nobody can edit is worse than a repeated call.
+// Retried once: the call is idempotent, and a post nobody can edit is worse than a repeated call.
 func (s *Server) grantPostOwnership(r *http.Request, userRef, postRef string) error {
 	var err error
 

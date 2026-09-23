@@ -12,8 +12,8 @@ import (
 // maxRequestBytes bounds a request body, so a caller cannot use one to exhaust a service.
 const maxRequestBytes = 1 << 20
 
-// DecodeJSON reads a JSON request body. A body it cannot read is the caller's fault, so it answers
-// with an envelope rather than a failure, and reports false to stop the handler.
+// A body that cannot be read is the caller's fault, so it answers with an envelope and reports
+// false to stop the handler.
 func DecodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	decoder := json.NewDecoder(io.LimitReader(r.Body, maxRequestBytes))
 	decoder.DisallowUnknownFields()
@@ -29,7 +29,6 @@ func DecodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	return true
 }
 
-// WriteJSON answers a successful call.
 func WriteJSON(w http.ResponseWriter, value any) {
 	body, err := json.Marshal(value)
 	if err != nil {
@@ -44,8 +43,7 @@ func WriteJSON(w http.ResponseWriter, value any) {
 	_, _ = w.Write(body)
 }
 
-// WriteError answers a call the caller got wrong. message is written for a visitor, because it is
-// what the site will show.
+// message is written for a visitor, because it is what the site will show.
 func WriteError(w http.ResponseWriter, code Code, message string) {
 	body, err := json.Marshal(Envelope{Code: code, Message: message})
 	if err != nil {
@@ -60,8 +58,7 @@ func WriteError(w http.ResponseWriter, code Code, message string) {
 	_, _ = w.Write(body)
 }
 
-// WriteInternal answers a call this service could not complete. The cause is logged and not sent,
-// so a client sees a failure it must not mistake for an answer.
+// The cause is logged and not sent, so a client sees a failure it cannot mistake for an answer.
 func WriteInternal(ctx context.Context, w http.ResponseWriter, logger *slog.Logger, operation string, err error) {
 	logger.ErrorContext(ctx, operation, slog.Any("error", err))
 

@@ -7,11 +7,9 @@ import (
 	"github.com/buildset/buildset/pkg/httpx"
 )
 
-// Classify is the one place content's errors become a wire code and a sentence written for a
-// visitor.
-//
-// The in-process adapter uses it too, so the single binary and the split answer identically. A
-// false result means the failure is the system's, not the request's.
+// Classify is the one place content's errors become a wire code and a sentence for a visitor. The
+// in-process adapter uses it too, so both topologies answer identically. A false result means the
+// failure is the system's, not the request's.
 func Classify(err error) (httpx.Code, string, bool) {
 	switch {
 	case err == nil:

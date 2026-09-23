@@ -99,8 +99,8 @@ func (s *Service) RevokeRole(ctx context.Context, subject, role string) error {
 	return nil
 }
 
-// Grant gives a subject direct permissions over one concrete resource. This is how ownership is
-// expressed: the service that creates a resource grants its creator the actions over it.
+// Grant is how ownership is expressed: the service that creates a resource grants its creator the
+// actions over it.
 func (s *Service) Grant(ctx context.Context, subject string, actions []string, resource string) error {
 	if err := validateSubject(subject); err != nil {
 		return err
@@ -127,8 +127,7 @@ func (s *Service) Grant(ctx context.Context, subject string, actions []string, r
 	return nil
 }
 
-// PurgeSubject removes everything held by a subject, for when the thing behind that reference is
-// deleted.
+// PurgeSubject removes everything held by a subject, for when whatever it references is deleted.
 func (s *Service) PurgeSubject(ctx context.Context, subject string) error {
 	if err := validateSubject(subject); err != nil {
 		return err
@@ -154,8 +153,8 @@ func (s *Service) PurgeResource(ctx context.Context, resource string) error {
 	return nil
 }
 
-// validateSubject checks the shape of a reference without resolving it. Storing malformed keys is
-// how an authorization table quietly stops matching.
+// The shape is checked without resolving it: malformed keys are how an authorization table quietly
+// stops matching.
 func validateSubject(subject string) error {
 	if err := ref.Validate(subject); err != nil {
 		return fmt.Errorf("subject: %w", err)

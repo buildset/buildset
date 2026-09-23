@@ -164,8 +164,8 @@ func scanPost(row rowScanner, notFound error) (*content.Post, error) {
 
 	post.Status = content.Status(status)
 
-	// A timestamptz comes back in the session's time zone. These are instants to everything above
-	// this layer, so they are normalised rather than carrying the server's zone around.
+	// A timestamptz comes back in the session's time zone; everything above this layer wants an
+	// instant.
 	post.CreatedAt = post.CreatedAt.UTC()
 	post.UpdatedAt = post.UpdatedAt.UTC()
 

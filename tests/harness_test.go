@@ -24,18 +24,15 @@ type harness struct {
 	browser playwright.Browser
 }
 
-// installOnce downloads the browser at most once per test binary, and only when asked to.
+// The browser is downloaded at most once per test binary, and only when asked to.
 var installOnce sync.Once
 
 // installBrowserEnvVar opts in to downloading the browser during the test run.
 const installBrowserEnvVar = "E2E_INSTALL_BROWSER"
 
-// startPlaywright returns a running driver, or the reason these tests cannot run.
-//
-// The download is not automatic. It is around 200 MB over the network, which would make `make
-// test` slow, dependent on an external host, and surprising the first time somebody runs it. CI
-// should install and cache the browser as a step of its own. Set E2E_INSTALL_BROWSER=1 to have
-// the tests do it instead.
+// startPlaywright returns a running driver, or the reason these tests cannot run. The browser is
+// around 200 MB, so CI should install and cache it as a step of its own; set E2E_INSTALL_BROWSER=1
+// to have the tests download it instead.
 func startPlaywright() (*playwright.Playwright, error) {
 	pw, err := playwright.Run()
 	if err == nil {
@@ -119,13 +116,8 @@ func newMonoHarness(t *testing.T) *harness {
 const topologyEnvVar = "E2E_TOPOLOGY"
 
 // forEachTopology runs a scenario against the single binary and against the four services behind a
-// gateway.
-//
-// The scenarios never mention either, because the whole claim being made about a split is that it
-// behaves the same way. Running one set of tests against both is what checks that claim, and it is
-// what catches the things a split actually breaks: the error envelope surviving the wire, a dead
-// dependency not being read as an answer, the session cookie surviving the gateway, and the
-// first-user hook crossing a network.
+// gateway. The claim a split makes is that it behaves the same way, and one set of tests against
+// both is what checks it.
 func forEachTopology(t *testing.T, scenario func(*testing.T, *harness)) {
 	t.Helper()
 

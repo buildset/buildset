@@ -18,12 +18,11 @@ import (
 	contentsqlite "github.com/buildset/buildset/content/sqlite"
 )
 
-// administratorRole is the role the first user is given. The name lives here because it is the
-// application's vocabulary; authz only stores the string.
+// administratorRole is the application's vocabulary; authz only stores the string.
 const administratorRole = "admin"
 
-// services holds every service this binary runs. It is the only place that knows they share a
-// process; each service is built from its own backend and never sees the others' packages.
+// services holds every service this binary runs. Each is built from its own backend and never sees
+// the others' packages.
 type services struct {
 	auth    *auth.Service
 	authz   *authz.Service
@@ -36,8 +35,8 @@ func newServices(ctx context.Context, cfg *Config, stores *Stores, logger *slog.
 		return nil, fmt.Errorf("build bcrypt algorithm: %w", err)
 	}
 
-	// TODO: register argon2id here and make it preferred once it is implemented. Existing bcrypt
-	// hashes keep verifying, and each user is upgraded on their next login.
+	// TODO: register argon2id here and prefer it once implemented. Existing bcrypt hashes keep
+	// verifying, and each user is upgraded on their next login.
 	passwords, err := hash.NewRegistry(bcryptAlgorithm)
 	if err != nil {
 		return nil, fmt.Errorf("build password registry: %w", err)
@@ -55,8 +54,7 @@ func newServices(ctx context.Context, cfg *Config, stores *Stores, logger *slog.
 
 	authzService := authz.NewService(authzRepository)
 
-	// The hook is the whole reason auth can create the first administrator without knowing that an
-	// authorization service exists. Only this file sees both sides.
+	// The hook lets auth create the first administrator without knowing that authz exists.
 	firstUserHook := auth.FirstUserHookFunc(func(ctx context.Context, userRef string) error {
 		if err := authzService.AssignRole(ctx, userRef, administratorRole); err != nil {
 			return fmt.Errorf("assign %s role to %s: %w", administratorRole, userRef, err)
@@ -84,8 +82,7 @@ func newServices(ctx context.Context, cfg *Config, stores *Stores, logger *slog.
 	}, nil
 }
 
-// The three factories below are the only places that name a storage backend. Each service is
-// handed a Repository and never learns which one it got.
+// The factories below are the only places that name a storage backend.
 
 func newAuthRepository(ctx context.Context, driver string, db *sql.DB) (auth.Repository, error) {
 	if driver == DriverPostgres {

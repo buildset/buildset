@@ -42,8 +42,7 @@ func NewRepository(ctx context.Context, db *sql.DB) (*Repository, error) {
 	return &Repository{db: db}, nil
 }
 
-// builder is the query builder bound to this backend. SQLite takes ? placeholders, which is
-// squirrel's default, so this is the only place the dialect is named.
+// SQLite takes ? placeholders, squirrel's default, so this is the only place the dialect is named.
 func (r *Repository) builder() squirrel.StatementBuilderType {
 	return squirrel.StatementBuilder.RunWith(r.db)
 }

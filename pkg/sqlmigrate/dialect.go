@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-// Dialect adapts Runner to one SQL engine. Everything that differs between engines is here: the
-// bookkeeping DDL, its placeholder style, and a lock that keeps two processes from migrating at
-// once. It is SQL text plus two calls, so this package still imports no driver.
+// Dialect adapts Runner to one SQL engine: the bookkeeping DDL, its placeholder style, and a lock
+// that keeps two processes from migrating at once. It is SQL text plus two calls, so this package
+// imports no driver.
 type Dialect interface {
 	// CreateTable is DDL that creates the bookkeeping table if it is absent.
 	CreateTable(table string) string
@@ -89,9 +89,8 @@ func (Postgres) Unlock(ctx context.Context, conn *sql.Conn, table string) error 
 	return nil
 }
 
-// advisoryKey derives the lock from the bookkeeping table name, which is the granularity wanted:
-// two services in one database hold different locks, two replicas of one service hold the same.
-// It only has to be stable across processes and releases.
+// The bookkeeping table name is the granularity wanted: two services in one database hold different
+// locks, two replicas of one service hold the same. The key only has to be stable across releases.
 func advisoryKey(table string) int64 {
 	hash := fnv.New64a()
 	hash.Write([]byte("sqlmigrate:" + table))
@@ -99,8 +98,8 @@ func advisoryKey(table string) int64 {
 	return int64(hash.Sum64())
 }
 
-// parseAppliedAt reads the applied_at column back. A driver hands it over as an instant where the
-// column is one, and as text where it is not, so both are accepted rather than assuming either.
+// A driver hands applied_at over as an instant where the column is one and as text where it is not,
+// so both are accepted.
 func parseAppliedAt(value any) (time.Time, error) {
 	switch typed := value.(type) {
 	case time.Time:

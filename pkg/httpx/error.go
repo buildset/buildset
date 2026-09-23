@@ -1,15 +1,12 @@
 // Package httpx is the contract between services: a JSON request, a JSON response, and one shape
-// for a failure that a request rather than the system is at fault for.
-//
-// It imports nothing but the standard library and pkg/reqid, so every service API and every client
-// can depend on it without any service depending on another.
+// for a failure the request rather than the system is at fault for. It imports nothing but the
+// standard library and pkg/reqid, so no service ends up depending on another.
 package httpx
 
 import "net/http"
 
-// Code is the wire vocabulary. It is deliberately tiny: these are the only three ways a request,
-// rather than the system, can be at fault anywhere in this system. Anything else is a failure, and
-// a failure must never be mistaken for an answer.
+// Code is the wire vocabulary: the only three ways a request, rather than the system, can be at
+// fault. Anything else is a failure and must never be mistaken for an answer.
 type Code string
 
 const (
@@ -44,8 +41,7 @@ func (c Code) Status() int {
 }
 
 // Envelope is the body of every non-2xx response from a service API, and the only shape a client
-// will accept as a domain error. Message is written for a visitor, exactly as an in-process
-// adapter would have written it.
+// accepts as a domain error. Message is written for a visitor.
 type Envelope struct {
 	Code    Code   `json:"code"`
 	Message string `json:"message"`

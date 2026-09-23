@@ -24,8 +24,8 @@ func userFacingError(err error, fallback string) string {
 	}
 }
 
-// isValidationError separates what the visitor can fix by retyping the form from what they cannot.
-// Everything else is the system's fault and must not be rendered as a form error.
+// isValidationError separates what the visitor can fix by retyping from what is the system's fault
+// and must not be rendered as a form error.
 func isValidationError(err error) bool {
 	return errors.Is(err, auth.ErrUsernameTaken) ||
 		errors.Is(err, auth.ErrInvalidUsername) ||

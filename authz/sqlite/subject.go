@@ -21,11 +21,8 @@ func subjectRoleColumns() []string {
 	return []string{subjectRoleColumnSubjectRef, subjectRoleColumnRole, subjectRoleColumnGrantedAt}
 }
 
-// SubjectPatterns unions the subject's role permissions with its direct grants. One query keeps
-// this to a single round trip on a connection the whole process shares.
-//
-// The union is written out rather than built, because a builder has no vocabulary for it and
-// spelling it as two queries would cost a round trip and lose the deduplication UNION gives.
+// SubjectPatterns unions the subject's role permissions with its direct grants. Two queries would
+// cost a round trip and lose the deduplication UNION gives.
 func (r *Repository) SubjectPatterns(ctx context.Context, subject string) ([]authz.Pattern, error) {
 	roles := squirrel.
 		Select(

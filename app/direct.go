@@ -16,9 +16,8 @@ import (
 	"github.com/buildset/buildset/web"
 )
 
-// This file is the only place where one service's types are converted into another's. Each adapter
-// wraps a service layer and calls it in process. A remote adapter speaking HTTP would sit beside
-// these and satisfy the same interface, and nothing in web would change.
+// Each adapter below wraps a service layer and calls it in process. A remote adapter speaking HTTP
+// satisfies the same interface, so nothing in web changes.
 
 type directAuth struct {
 	service *auth.Service
@@ -238,11 +237,9 @@ func toWebPost(post *content.Post) *web.Post {
 	}
 }
 
-// translateAuthError maps what auth reports onto what web understands. Anything unmapped stays as
-// it is and is treated by web as a failure of the system.
-// The three translators below classify with the same functions the HTTP APIs use, so this binary
-// and the split one turn a given failure into the same sentinel and the same sentence. Anything
-// unclassified passes through, and the site treats it as a failure of the system.
+// The translators below classify with the same functions the HTTP APIs use, so this binary and the
+// split one turn a given failure into the same sentinel and sentence. Anything unclassified passes
+// through, and the site treats it as a failure of the system.
 
 func translateAuthError(err error) error {
 	return translate(err, authhttpapi.Classify)

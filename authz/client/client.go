@@ -1,7 +1,5 @@
-// Package client calls the authorization service over HTTP.
-//
-// It returns the wire types and httpx errors, and knows nothing about any consumer. The site wraps
-// it in an adapter shaped to its own interface; the identity service uses it directly.
+// Package client calls the authorization service over HTTP. It returns the wire types and httpx
+// errors, and knows nothing about any consumer.
 package client
 
 import (

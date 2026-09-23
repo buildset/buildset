@@ -1,8 +1,6 @@
-// Package safeurl keeps a redirect target inside this site.
-//
-// It is shared rather than duplicated because both sides of an identity split depend on it: the
-// service that builds the ?next= link and the service that acts on it must agree exactly, or the
-// same-origin guarantee holds in one binary and not the other.
+// Package safeurl keeps a redirect target inside this site. The service that builds the ?next= link
+// and the service that acts on it must agree exactly, or the same-origin guarantee holds in one
+// binary and not the other.
 package safeurl
 
 import (

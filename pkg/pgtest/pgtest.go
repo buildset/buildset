@@ -1,7 +1,6 @@
-// Package pgtest gives the Postgres repository tests a database to run against.
-//
-// It starts one container per test binary and hands each test its own schema, so tests stay
-// isolated without a container each and without truncating between them. It exists only for tests.
+// Package pgtest gives the Postgres repository tests a database to run against. It starts one
+// container per test binary and hands each test its own schema, so tests stay isolated without a
+// container each and without truncating between them.
 package pgtest
 
 import (
@@ -31,9 +30,8 @@ var (
 	containerErr  error
 )
 
-// DSN returns a database these tests may create and drop schemas in, starting the container on
-// first use. Every test package that calls it gets one container, and the reaper removes it when
-// the test binary exits.
+// DSN starts the container on first use, one per test package; the reaper removes it when the test
+// binary exits.
 func DSN(t *testing.T) string {
 	t.Helper()
 
@@ -45,8 +43,8 @@ func DSN(t *testing.T) string {
 			postgrestc.WithDatabase("buildset_test"),
 			postgrestc.WithUsername("postgres"),
 			postgrestc.WithPassword("postgres"),
-			// C collation, so text identifiers order by byte exactly as they do under SQLite.
-			// The repositories and their shared conformance suite depend on that.
+			// C collation, so text identifiers order by byte exactly as they do under SQLite, which
+			// the shared conformance suite depends on.
 			testcontainers.WithEnv(map[string]string{
 				"POSTGRES_INITDB_ARGS": "--locale=C --encoding=UTF8",
 			}),

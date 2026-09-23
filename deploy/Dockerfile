@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# One Dockerfile for every binary, selected by CMD. One place for the Go version and the build
-# flags, and the dependency layer is shared across all of them.
+# One Dockerfile for every binary, selected by CMD, so they share a Go version and a dependency
+# layer.
 FROM golang:1.27-alpine AS build
 
 WORKDIR /src
@@ -16,8 +16,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/service ./cmd/${CMD}
 
-# A static image is possible because the SQLite driver is pure Go. It has no shell, which is why
-# the healthcheck is the binary probing its own readiness rather than a wget.
+# A static image, possible because the SQLite driver is pure Go. It has no shell, which is why the
+# healthcheck is the binary probing its own readiness.
 FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /out/service /service

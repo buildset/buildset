@@ -9,9 +9,8 @@ import (
 	"github.com/buildset/buildset/web"
 )
 
-// The fakes below stand in for the other services. They are hand written rather than generated:
-// there are three of them, they are short, and a generated mock would hide what each test is
-// actually arranging.
+// The fakes below stand in for the other services. They are hand written because a generated mock
+// would hide what each test is arranging.
 
 type fakeAuth struct {
 	setupOpen bool

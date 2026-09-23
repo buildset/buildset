@@ -7,9 +7,8 @@ import (
 	"github.com/buildset/buildset/auth"
 )
 
-// setupGate reports whether the first-run pages should respond at all. Once a user exists they are
-// gone for good, and they answer 404 rather than 403 so a running instance does not advertise that
-// a setup route was ever there.
+// setupGate closes the first-run pages for good once a user exists. It answers 404 rather than 403
+// so a running instance does not advertise that a setup route was ever there.
 func (h *Handler) setupGate(w http.ResponseWriter, r *http.Request) bool {
 	open, err := h.service.SetupOpen(r.Context())
 	if err != nil {

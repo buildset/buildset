@@ -8,8 +8,7 @@ import (
 
 type adminUsersContent struct {
 	Users []User
-	// CanCreate controls a link to the identity service's form. This site never renders a password
-	// field of its own.
+	// CanCreate controls a link to the identity service's form; this site renders no password field.
 	CanCreate   bool
 	RegisterURL string
 }
@@ -81,8 +80,7 @@ func (s *Server) adminUser(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, http.StatusOK, "admin_user.gohtml", data)
 }
 
-// setUserRoles replaces the whole role set from the submitted checkboxes, so resubmitting the same
-// form changes nothing rather than failing or duplicating.
+// The whole role set is replaced, so resubmitting the same form changes nothing.
 func (s *Server) setUserRoles(w http.ResponseWriter, r *http.Request) {
 	viewer, subject, ok := s.authorizeUser(w, r, ActionRoleAssign)
 	if !ok {
@@ -234,14 +232,9 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The roles and grants go first, and the account second, for the same reason as deleting a
-	// post: these are two services and cannot share a transaction, and this is the order where a
-	// failure leaves something an administrator can retry rather than something left behind with
-	// nothing to name it. An account stripped of its roles is an account, and deleting it again
-	// finishes the job.
-	//
-	// Roles and grants keyed to a reference that no longer resolves would apply to whoever got
-	// that reference next, so they go with the account.
+	// Roles and grants go first, for the same reason as deleting a post: an account stripped of its
+	// roles can be deleted again, while roles left behind would apply to whoever got that reference
+	// next.
 	if err := s.deps.Authz.PurgeSubject(r.Context(), subject.Ref); err != nil {
 		s.renderInternalError(w, r, err, "purge user grants")
 

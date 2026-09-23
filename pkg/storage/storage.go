@@ -15,8 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// Driver names the storage backend. Both are supported everywhere; SQLite is the default because
-// it needs nothing to be running.
+// Both are supported everywhere; SQLite is the default because it needs nothing to be running.
 const (
 	DriverSQLite   = "sqlite"
 	DriverPostgres = "postgres"
@@ -63,8 +62,7 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// Open connects to one service's storage. schema names the Postgres schema this service owns and
-// is ignored by SQLite, where one file holds everything.
+// schema names the Postgres schema this service owns, and is ignored by SQLite.
 func Open(ctx context.Context, cfg Config, schema string) (*sql.DB, error) {
 	switch cfg.Driver {
 	case DriverSQLite:
@@ -127,9 +125,8 @@ func openPostgres(ctx context.Context, cfg Config, schema string) (*sql.DB, erro
 	return db, nil
 }
 
-// serviceDSN points a connection at one service's schema. A deployment that gives each service its
-// own role already sets search_path on that role, and this leaves such a DSN alone; it is here so
-// one connection string also works, for a single binary and for tests.
+// serviceDSN points a connection at one service's schema, so one connection string works for a
+// single binary and for tests. A DSN that already sets search_path is left alone.
 func serviceDSN(dsn, schema string) (string, error) {
 	parsed, err := url.Parse(dsn)
 	if err != nil {

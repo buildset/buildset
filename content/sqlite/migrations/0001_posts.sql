@@ -11,8 +11,7 @@ CREATE TABLE posts (
     updated_at   TEXT NOT NULL,
     published_at TEXT,
     CHECK (status IN ('draft', 'published', 'archived')),
-    -- Extending this list is a one-line migration, and until then an unsupported body format
-    -- cannot reach the table.
+    -- Extending this list is a one-line migration; until then no other body format can land here.
     CHECK (content_type IN ('text/plain')),
     CHECK (length(title) BETWEEN 1 AND 200),
     CHECK (status <> 'published' OR published_at IS NOT NULL)

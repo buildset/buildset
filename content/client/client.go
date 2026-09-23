@@ -1,7 +1,5 @@
-// Package client calls the content service over HTTP.
-//
-// Rendering a body is not here: it is a pure function of the body and its content type, so a
-// consumer calls content/render locally rather than spending a round trip on it.
+// Package client calls the content service over HTTP. Rendering a body is not here: it is a pure
+// function of the body and its content type, so a consumer calls content/render locally.
 package client
 
 import (
