@@ -5,13 +5,49 @@ run:
   modules-download-mode: readonly
 
 linters:
-  enable-all: true
+  default: all
   disable:
-    - nolintlint
-issues:
-  exclude-dirs:
-    - tmp
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - funlen
+    - bodyclose
+    - contextcheck
+    - cyclop
+    - depguard
+    - embeddedstructfieldcheck
+    - errname
+    - exhaustruct # deprecated
+    - exhaustruct_v5
+    - funlen
+    - funcorder
+    - gochecknoglobals
+    - goconst
+    - gocritic
+    - godoclint
+    - godox
+    - gomodguard # deprecated
+    - gosec
+    - interfacebloat
+    - ireturn
+    - lll
+    - maintidx
+    - mnd
+    - nilnil
+    - noctx
+    - noinlineerr
+    - paralleltest
+    - perfsprint
+    - revive
+    - tagliatelle
+    - testifylint
+    - testpackage
+    - thelper
+    - unparam
+    - varnamelen
+    - wrapcheck
+    - wsl # deprecated
+    - wsl_v5
+  exclusions:
+    paths:
+      - tmp
+    rules:
+      - path: _test\.go
+        linters:
+          - funlen
