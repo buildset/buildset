@@ -12,7 +12,6 @@ linters:
     - cyclop
     - depguard
     - embeddedstructfieldcheck
-    - errname
     - exhaustruct # deprecated
     - exhaustruct_v5
     - funlen

@@ -27,7 +27,7 @@ var schemaNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 var (
 	containerOnce sync.Once
 	containerDSN  string
-	containerErr  error
+	errContainer  error
 )
 
 // DSN starts the container on first use, one per test package; the reaper removes it when the test
@@ -51,15 +51,15 @@ func DSN(t *testing.T) string {
 			postgrestc.BasicWaitStrategies(),
 		)
 		if err != nil {
-			containerErr = err
+			errContainer = err
 
 			return
 		}
 
-		containerDSN, containerErr = container.ConnectionString(ctx, "sslmode=disable")
+		containerDSN, errContainer = container.ConnectionString(ctx, "sslmode=disable")
 	})
 
-	require.NoError(t, containerErr, "start postgres container")
+	require.NoError(t, errContainer, "start postgres container")
 
 	return containerDSN
 }
