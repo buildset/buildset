@@ -15,6 +15,8 @@ func TestFirstRunToPublishedPost(t *testing.T) {
 }
 
 func firstRunToPublishedPost(t *testing.T, h *harness) {
+	t.Helper()
+
 	admin := h.newPage(t)
 
 	// An instance with no accounts sends its first visitor to set itself up.
@@ -68,6 +70,8 @@ func TestSignedInReaderHasNoAdministration(t *testing.T) {
 }
 
 func signedInReaderHasNoAdministration(t *testing.T, h *harness) {
+	t.Helper()
+
 	admin := h.newPage(t)
 	h.open(t, admin, "/setup")
 	fill(t, admin, "Username", "ada")

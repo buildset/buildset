@@ -33,7 +33,6 @@ linters:
     - revive
     - tagliatelle
     - testpackage
-    - thelper
     - unparam
     - varnamelen
     - wrapcheck
