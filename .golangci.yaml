@@ -8,12 +8,10 @@ linters:
   default: all
   disable:
     - bodyclose
-    - cyclop
     - depguard
     - embeddedstructfieldcheck
     - exhaustruct # deprecated
     - exhaustruct_v5
-    - funlen
     - funcorder
     - gochecknoglobals
     - goconst
@@ -25,7 +23,6 @@ linters:
     - interfacebloat
     - ireturn
     - lll
-    - maintidx
     - mnd
     - noinlineerr
     - paralleltest
@@ -37,6 +34,14 @@ linters:
     - wrapcheck
     - wsl # deprecated
     - wsl_v5
+  settings:
+    cyclop:
+      max-complexity: 20
+    funlen:
+      lines: 300
+      statements: 150
+    maintidx:
+      under: 15
   exclusions:
     paths:
       - tmp
