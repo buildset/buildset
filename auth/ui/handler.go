@@ -19,6 +19,11 @@ import (
 // maxFormBytes caps a form submission; these forms are a handful of short fields.
 const maxFormBytes = 16 << 10
 
+var (
+	errInvalidConfig     = errors.New("invalid configuration")
+	errMissingDependency = errors.New("missing dependency")
+)
+
 type Config struct {
 	SessionCookieName string
 	SecureCookies     bool
@@ -34,11 +39,11 @@ type Handler struct {
 
 func NewHandler(service *auth.Service, policy RegistrationPolicy, config Config, logger *slog.Logger) (*Handler, error) {
 	if config.SessionCookieName == "" {
-		return nil, fmt.Errorf("session cookie name must not be empty")
+		return nil, fmt.Errorf("%w: session cookie name must not be empty", errInvalidConfig)
 	}
 
 	if policy == nil {
-		return nil, fmt.Errorf("a registration policy must be provided")
+		return nil, fmt.Errorf("%w: a registration policy must be provided", errMissingDependency)
 	}
 
 	templates, err := parseTemplates()

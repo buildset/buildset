@@ -4,6 +4,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -18,6 +19,8 @@ import (
 // SessionCookieName is fixed rather than configurable, so the service that sets the cookie and the
 // ones that read it cannot disagree.
 const SessionCookieName = "ms_session"
+
+var errInvalidConfig = errors.New("invalid configuration")
 
 // Port stays the string the environment gave: that is what net.Listen wants, and it lets PORT name
 // a service ("http") as well as a number.
@@ -57,7 +60,7 @@ func (s Server) Validate() error {
 	}
 
 	if s.ShutdownTimeout <= 0 {
-		return fmt.Errorf("SHUTDOWN_TIMEOUT must be positive, got %s", s.ShutdownTimeout)
+		return fmt.Errorf("%w: SHUTDOWN_TIMEOUT must be positive, got %s", errInvalidConfig, s.ShutdownTimeout)
 	}
 
 	return nil
@@ -95,7 +98,7 @@ func LoadCookie() Cookie {
 func LoadURL(key string) (string, error) {
 	raw := env.GetString(key, "")
 	if raw == "" {
-		return "", fmt.Errorf("%s must be set", key)
+		return "", fmt.Errorf("%w: %s must be set", errInvalidConfig, key)
 	}
 
 	parsed, err := url.Parse(raw)
@@ -104,11 +107,11 @@ func LoadURL(key string) (string, error) {
 	}
 
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return "", fmt.Errorf("%s must be an http or https URL, got %q", key, raw)
+		return "", fmt.Errorf("%w: %s must be an http or https URL, got %q", errInvalidConfig, key, raw)
 	}
 
 	if parsed.Host == "" {
-		return "", fmt.Errorf("%s must include a host, got %q", key, raw)
+		return "", fmt.Errorf("%w: %s must include a host, got %q", errInvalidConfig, key, raw)
 	}
 
 	// A trailing slash would double up when a path is appended.

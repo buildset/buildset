@@ -27,6 +27,8 @@ import (
 
 const sessionCookieName = "ms_session"
 
+var errAuthzUnreachable = errors.New("authz is unreachable")
+
 type recordingHook struct {
 	refs []string
 	err  error
@@ -194,7 +196,7 @@ func TestSetupRunsOnceAndMakesTheFirstUserKnownToTheHook(t *testing.T) {
 
 func TestSetupRollsBackWhenTheHookFails(t *testing.T) {
 	h := newHarness(t)
-	h.hook.err = errors.New("authz is unreachable")
+	h.hook.err = errAuthzUnreachable
 
 	assert.Equal(t, http.StatusInternalServerError, h.post(t, "/setup", setupForm()).StatusCode)
 

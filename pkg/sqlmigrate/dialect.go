@@ -109,6 +109,6 @@ func parseAppliedAt(value any) (time.Time, error) {
 	case []byte:
 		return time.Parse(appliedAtFormat, string(typed))
 	default:
-		return time.Time{}, fmt.Errorf("unsupported applied_at type %T", value)
+		return time.Time{}, fmt.Errorf("%w: %T", errUnsupportedAppliedAt, value)
 	}
 }

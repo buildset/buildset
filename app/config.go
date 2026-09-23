@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -19,6 +20,8 @@ const (
 	DriverSQLite   = storage.DriverSQLite
 	DriverPostgres = storage.DriverPostgres
 )
+
+var errInvalidConfig = errors.New("invalid configuration")
 
 type DatabaseConfig = storage.Config
 
@@ -78,11 +81,11 @@ func LoadAuthConfig() AuthConfig {
 func (c AuthConfig) Validate() error {
 	// bcrypt rejects costs outside [4, 31]; bounding here fails at boot rather than per login.
 	if c.BcryptCost < 10 || c.BcryptCost > 31 {
-		return fmt.Errorf("AUTH_BCRYPT_COST must be between 10 and 31, got %d", c.BcryptCost)
+		return fmt.Errorf("%w: AUTH_BCRYPT_COST must be between 10 and 31, got %d", errInvalidConfig, c.BcryptCost)
 	}
 
 	if c.SessionTTL <= 0 {
-		return fmt.Errorf("AUTH_SESSION_TTL must be positive, got %s", c.SessionTTL)
+		return fmt.Errorf("%w: AUTH_SESSION_TTL must be positive, got %s", errInvalidConfig, c.SessionTTL)
 	}
 
 	return nil

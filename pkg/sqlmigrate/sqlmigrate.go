@@ -22,6 +22,11 @@ var (
 	ErrChecksumMismatch = errors.New("applied migration has changed on disk")
 	ErrMissingFile      = errors.New("applied migration is missing from disk")
 
+	errInvalidTableName     = errors.New("invalid migration table name")
+	errInvalidFileName      = errors.New("invalid migration file name")
+	errDuplicateVersion     = errors.New("duplicate migration version")
+	errUnsupportedAppliedAt = errors.New("unsupported applied_at type")
+
 	fileNamePattern  = regexp.MustCompile(`^(\d{4})_([a-z0-9_]+)\.sql$`)
 	tableNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 )
@@ -74,7 +79,7 @@ type migration struct {
 // migration is fixed by adding a new numbered file, never by editing an applied one.
 func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 	if !tableNamePattern.MatchString(r.TableName) {
-		return fmt.Errorf("invalid migration table name %q", r.TableName)
+		return fmt.Errorf("%w: %q", errInvalidTableName, r.TableName)
 	}
 
 	migrations, err := r.load()
@@ -227,7 +232,7 @@ func (r Runner) load() ([]migration, error) {
 
 		matches := fileNamePattern.FindStringSubmatch(entry.Name())
 		if matches == nil {
-			return nil, fmt.Errorf("migration file %q does not match NNNN_name.sql", entry.Name())
+			return nil, fmt.Errorf("%w: %q does not match NNNN_name.sql", errInvalidFileName, entry.Name())
 		}
 
 		version, err := strconv.Atoi(matches[1])
@@ -236,7 +241,7 @@ func (r Runner) load() ([]migration, error) {
 		}
 
 		if other, ok := seen[version]; ok {
-			return nil, fmt.Errorf("migration version %d used by both %q and %q", version, other, entry.Name())
+			return nil, fmt.Errorf("%w: %d used by both %q and %q", errDuplicateVersion, version, other, entry.Name())
 		}
 
 		seen[version] = entry.Name()

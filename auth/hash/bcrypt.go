@@ -11,13 +11,15 @@ import (
 // input is rejected instead.
 const MaxBcryptPasswordLength = 72
 
+var errInvalidBcryptCost = errors.New("invalid bcrypt cost")
+
 type Bcrypt struct {
 	cost int
 }
 
 func NewBcrypt(cost int) (*Bcrypt, error) {
 	if cost < bcrypt.MinCost || cost > bcrypt.MaxCost {
-		return nil, fmt.Errorf("bcrypt cost must be between %d and %d, got %d", bcrypt.MinCost, bcrypt.MaxCost, cost)
+		return nil, fmt.Errorf("%w: must be between %d and %d, got %d", errInvalidBcryptCost, bcrypt.MinCost, bcrypt.MaxCost, cost)
 	}
 
 	return &Bcrypt{cost: cost}, nil

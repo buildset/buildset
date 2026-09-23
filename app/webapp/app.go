@@ -5,6 +5,7 @@ package webapp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -20,6 +21,8 @@ import (
 	"github.com/buildset/buildset/web/remote"
 	"github.com/nasermirzaei89/env"
 )
+
+var errInvalidConfig = errors.New("invalid configuration")
 
 type Config struct {
 	config.Server
@@ -93,7 +96,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPTimeout <= 0 {
-		return fmt.Errorf("HTTP_TIMEOUT must be positive, got %s", c.HTTPTimeout)
+		return fmt.Errorf("%w: HTTP_TIMEOUT must be positive, got %s", errInvalidConfig, c.HTTPTimeout)
 	}
 
 	return nil

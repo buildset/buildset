@@ -4,6 +4,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -12,6 +13,11 @@ import (
 
 // maxFormBytes caps a form submission; a post body is the largest thing submitted here.
 const maxFormBytes = 1 << 20
+
+var (
+	errInvalidConfig     = errors.New("invalid configuration")
+	errMissingDependency = errors.New("missing dependency")
+)
 
 type Config struct {
 	SessionCookieName string
@@ -35,11 +41,11 @@ type Server struct {
 
 func New(deps Dependencies, config Config, logger *slog.Logger) (*Server, error) {
 	if deps.Auth == nil || deps.Authz == nil || deps.Content == nil {
-		return nil, fmt.Errorf("every dependency must be provided")
+		return nil, fmt.Errorf("%w: every dependency must be provided", errMissingDependency)
 	}
 
 	if config.SessionCookieName == "" {
-		return nil, fmt.Errorf("session cookie name must not be empty")
+		return nil, fmt.Errorf("%w: session cookie name must not be empty", errInvalidConfig)
 	}
 
 	if config.SiteTitle == "" {

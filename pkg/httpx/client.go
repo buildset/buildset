@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -26,6 +27,11 @@ const (
 	defaultMaxIdleConnsPerHost = 32
 )
 
+var (
+	errInvalidArgument  = errors.New("invalid argument")
+	errUnexpectedAnswer = errors.New("unexpected answer")
+)
+
 type ClientOptions struct {
 	// Timeout bounds one call. The five-second default is set against the thirty-second write
 	// timeout of a page-serving process, leaving room to render an error page.
@@ -45,11 +51,11 @@ type Client struct {
 
 func NewClient(service, baseURL string, opts ClientOptions) (*Client, error) {
 	if service == "" {
-		return nil, fmt.Errorf("service name must not be empty")
+		return nil, fmt.Errorf("%w: service name must not be empty", errInvalidArgument)
 	}
 
 	if baseURL == "" {
-		return nil, fmt.Errorf("base URL of %s must not be empty", service)
+		return nil, fmt.Errorf("%w: base URL of %s must not be empty", errInvalidArgument, service)
 	}
 
 	timeout := opts.Timeout
@@ -139,12 +145,12 @@ func decodeError(response *http.Response) error {
 	switch response.StatusCode {
 	case http.StatusBadRequest, http.StatusNotFound, http.StatusConflict:
 	default:
-		return fmt.Errorf("unexpected status %d", response.StatusCode)
+		return fmt.Errorf("%w: status %d", errUnexpectedAnswer, response.StatusCode)
 	}
 
 	mediaType, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
 	if err != nil || mediaType != "application/json" {
-		return fmt.Errorf("status %d with content type %q", response.StatusCode, response.Header.Get("Content-Type"))
+		return fmt.Errorf("%w: status %d with content type %q", errUnexpectedAnswer, response.StatusCode, response.Header.Get("Content-Type"))
 	}
 
 	var envelope Envelope
@@ -153,7 +159,7 @@ func decodeError(response *http.Response) error {
 	}
 
 	if !envelope.Code.Known() {
-		return fmt.Errorf("status %d with unknown code %q", response.StatusCode, envelope.Code)
+		return fmt.Errorf("%w: status %d with unknown code %q", errUnexpectedAnswer, response.StatusCode, envelope.Code)
 	}
 
 	return &Error{Code: envelope.Code, Message: envelope.Message}

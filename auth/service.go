@@ -24,6 +24,8 @@ const (
 	maxUserLimit  = 500
 )
 
+var errInvalidSessionTTL = errors.New("session ttl must be positive")
+
 type Service struct {
 	repository    Repository
 	passwords     *hash.Registry
@@ -37,7 +39,7 @@ type Service struct {
 
 func NewService(repository Repository, passwords *hash.Registry, firstUserHook FirstUserHook, sessionTTL time.Duration, logger *slog.Logger) (*Service, error) {
 	if sessionTTL <= 0 {
-		return nil, fmt.Errorf("session ttl must be positive, got %s", sessionTTL)
+		return nil, fmt.Errorf("%w: got %s", errInvalidSessionTTL, sessionTTL)
 	}
 
 	dummyHash, err := passwords.Hash(rand.Text())

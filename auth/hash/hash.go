@@ -20,6 +20,8 @@ var (
 	ErrUnknownAlgorithm = errors.New("unknown password hash algorithm")
 	ErrPasswordTooShort = fmt.Errorf("password must be at least %d bytes", MinPasswordLength)
 	ErrPasswordTooLong  = errors.New("password is too long for the hash algorithm")
+
+	errDuplicateIdentifier = errors.New("hash identifier is claimed twice")
 )
 
 // Algorithm is one password hashing scheme.
@@ -44,7 +46,7 @@ func NewRegistry(preferred Algorithm, others ...Algorithm) (*Registry, error) {
 	for _, algorithm := range append([]Algorithm{preferred}, others...) {
 		for _, identifier := range algorithm.Identifiers() {
 			if existing, ok := registry.algorithms[identifier]; ok {
-				return nil, fmt.Errorf("identifier %q claimed by both %s and %s", identifier, existing.Name(), algorithm.Name())
+				return nil, fmt.Errorf("%w: %q claimed by both %s and %s", errDuplicateIdentifier, identifier, existing.Name(), algorithm.Name())
 			}
 
 			registry.algorithms[identifier] = algorithm

@@ -3,6 +3,7 @@
 package httpapi
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"github.com/buildset/buildset/pkg/httpx"
 )
 
+var errMissingDependency = errors.New("missing dependency")
+
 type Handler struct {
 	service *authz.Service
 	logger  *slog.Logger
@@ -19,11 +22,11 @@ type Handler struct {
 
 func NewHandler(service *authz.Service, logger *slog.Logger) (*Handler, error) {
 	if service == nil {
-		return nil, fmt.Errorf("authz service must not be nil")
+		return nil, fmt.Errorf("%w: authz service must not be nil", errMissingDependency)
 	}
 
 	if logger == nil {
-		return nil, fmt.Errorf("logger must not be nil")
+		return nil, fmt.Errorf("%w: logger must not be nil", errMissingDependency)
 	}
 
 	return &Handler{service: service, logger: logger}, nil

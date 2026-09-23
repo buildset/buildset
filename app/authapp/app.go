@@ -6,6 +6,7 @@ package authapp
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -27,6 +28,8 @@ import (
 
 // schema is the Postgres schema this service owns. SQLite ignores it.
 const schema = "auth"
+
+var errInvalidConfig = errors.New("invalid configuration")
 
 // Expiry is enforced on every lookup; sweeping only keeps the table from growing forever.
 const expiredSessionSweepInterval = time.Hour
@@ -90,15 +93,15 @@ func (c *Config) Validate() error {
 
 	// bcrypt rejects costs outside [4, 31]; bounding here fails at boot rather than per login.
 	if c.BcryptCost < 10 || c.BcryptCost > 31 {
-		return fmt.Errorf("AUTH_BCRYPT_COST must be between 10 and 31, got %d", c.BcryptCost)
+		return fmt.Errorf("%w: AUTH_BCRYPT_COST must be between 10 and 31, got %d", errInvalidConfig, c.BcryptCost)
 	}
 
 	if c.SessionTTL <= 0 {
-		return fmt.Errorf("AUTH_SESSION_TTL must be positive, got %s", c.SessionTTL)
+		return fmt.Errorf("%w: AUTH_SESSION_TTL must be positive, got %s", errInvalidConfig, c.SessionTTL)
 	}
 
 	if c.AdminRole == "" {
-		return fmt.Errorf("AUTH_ADMIN_ROLE must not be empty")
+		return fmt.Errorf("%w: AUTH_ADMIN_ROLE must not be empty", errInvalidConfig)
 	}
 
 	return nil

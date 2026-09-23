@@ -20,6 +20,8 @@ import (
 // inside it is ready.
 const healthcheckFlag = "-healthcheck"
 
+var errNotReady = errors.New("service is not ready")
+
 // Main is every main function in cmd/: load .env, catch a signal, run, report, exit.
 func Main(run func(context.Context) error) {
 	loadDotEnv()
@@ -69,7 +71,7 @@ func Healthcheck() error {
 	_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 1<<10))
 
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("readyz answered %d", response.StatusCode)
+		return fmt.Errorf("%w: readyz answered %d", errNotReady, response.StatusCode)
 	}
 
 	return nil

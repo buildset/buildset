@@ -5,6 +5,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -19,6 +20,11 @@ import (
 const (
 	DriverSQLite   = "sqlite"
 	DriverPostgres = "postgres"
+)
+
+var (
+	errInvalidConfig = errors.New("invalid configuration")
+	errUnknownDriver = errors.New("unknown database driver")
 )
 
 type Config struct {
@@ -45,18 +51,18 @@ func (c Config) Validate() error {
 	switch c.Driver {
 	case DriverSQLite:
 		if c.Path == "" {
-			return fmt.Errorf("DATABASE_PATH must not be empty")
+			return fmt.Errorf("%w: DATABASE_PATH must not be empty", errInvalidConfig)
 		}
 	case DriverPostgres:
 		if c.DSN == "" {
-			return fmt.Errorf("DATABASE_DSN must not be empty when DATABASE_DRIVER is %q", DriverPostgres)
+			return fmt.Errorf("%w: DATABASE_DSN must not be empty when DATABASE_DRIVER is %q", errInvalidConfig, DriverPostgres)
 		}
 
 		if c.MaxOpenConns < 1 {
-			return fmt.Errorf("DATABASE_MAX_OPEN_CONNS must be positive, got %d", c.MaxOpenConns)
+			return fmt.Errorf("%w: DATABASE_MAX_OPEN_CONNS must be positive, got %d", errInvalidConfig, c.MaxOpenConns)
 		}
 	default:
-		return fmt.Errorf("DATABASE_DRIVER must be %q or %q, got %q", DriverSQLite, DriverPostgres, c.Driver)
+		return fmt.Errorf("%w: DATABASE_DRIVER must be %q or %q, got %q", errInvalidConfig, DriverSQLite, DriverPostgres, c.Driver)
 	}
 
 	return nil
@@ -70,7 +76,7 @@ func Open(ctx context.Context, cfg Config, schema string) (*sql.DB, error) {
 	case DriverPostgres:
 		return openPostgres(ctx, cfg, schema)
 	default:
-		return nil, fmt.Errorf("unknown database driver %q", cfg.Driver)
+		return nil, fmt.Errorf("%w: %q", errUnknownDriver, cfg.Driver)
 	}
 }
 
