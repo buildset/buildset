@@ -51,13 +51,15 @@ func validRequestID(id string) bool {
 // than dropping the connection.
 func RecoverPanics(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		defer func() {
 			recovered := recover()
 			if recovered == nil {
 				return
 			}
 
-			logger.ErrorContext(r.Context(), "handler panicked",
+			logger.ErrorContext(ctx, "handler panicked",
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
 				slog.Any("panic", recovered),

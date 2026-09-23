@@ -8,7 +8,6 @@ linters:
   default: all
   disable:
     - bodyclose
-    - contextcheck
     - cyclop
     - depguard
     - embeddedstructfieldcheck
