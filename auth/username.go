@@ -22,7 +22,12 @@ func NormalizeUsername(username string) string {
 // identical names can coexist. That matters once usernames are shown as an identity claim.
 func ValidateUsername(username string) error {
 	if len(username) < MinUsernameLength || len(username) > MaxUsernameLength {
-		return fmt.Errorf("%w: it must be between %d and %d characters", ErrInvalidUsername, MinUsernameLength, MaxUsernameLength)
+		return fmt.Errorf(
+			"%w: it must be between %d and %d characters",
+			ErrInvalidUsername,
+			MinUsernameLength,
+			MaxUsernameLength,
+		)
 	}
 
 	for i, c := range username {
@@ -31,7 +36,10 @@ func ValidateUsername(username string) error {
 		case c >= '0' && c <= '9':
 		case (c == '-' || c == '_') && i > 0:
 		default:
-			return fmt.Errorf("%w: it may contain only lowercase letters, digits, hyphen, and underscore, and must not start with a hyphen or underscore", ErrInvalidUsername)
+			return fmt.Errorf(
+				"%w: it may contain only lowercase letters, digits, hyphen, and underscore, and must not start with a hyphen or underscore",
+				ErrInvalidUsername,
+			)
 		}
 	}
 

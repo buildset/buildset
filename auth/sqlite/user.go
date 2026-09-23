@@ -31,6 +31,7 @@ func userColumns() []string {
 		userColumnUpdatedAt,
 	}
 }
+
 func (r *Repository) InsertUser(ctx context.Context, user *auth.User) error {
 	_, err := r.builder().
 		Insert(tableUsers).
@@ -158,7 +159,14 @@ func scanUser(row rowScanner, notFound error) (*auth.User, error) {
 		createdAt, updatedAt string
 	)
 
-	err := row.Scan(&user.ID, &user.Username, &user.Name, &user.PasswordHash, &createdAt, &updatedAt)
+	err := row.Scan(
+		&user.ID,
+		&user.Username,
+		&user.Name,
+		&user.PasswordHash,
+		&createdAt,
+		&updatedAt,
+	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, notFound

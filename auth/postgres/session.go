@@ -36,6 +36,7 @@ func sessionColumns() []string {
 		sessionColumnIP,
 	}
 }
+
 func (r *Repository) InsertSession(ctx context.Context, session *auth.Session) error {
 	_, err := r.builder().
 		Insert(tableSessions).
@@ -58,7 +59,10 @@ func (r *Repository) InsertSession(ctx context.Context, session *auth.Session) e
 	return nil
 }
 
-func (r *Repository) GetSessionByTokenHash(ctx context.Context, tokenHash string) (*auth.Session, error) {
+func (r *Repository) GetSessionByTokenHash(
+	ctx context.Context,
+	tokenHash string,
+) (*auth.Session, error) {
 	var session auth.Session
 
 	err := r.builder().
@@ -112,7 +116,10 @@ func (r *Repository) DeleteSessionByTokenHash(ctx context.Context, tokenHash str
 	return nil
 }
 
-func (r *Repository) DeleteSessionsByUser(ctx context.Context, userID, exceptSessionID string) error {
+func (r *Repository) DeleteSessionsByUser(
+	ctx context.Context,
+	userID, exceptSessionID string,
+) error {
 	// An empty exceptSessionID matches no row, so every session of the user is removed.
 	_, err := r.builder().
 		Delete(tableSessions).

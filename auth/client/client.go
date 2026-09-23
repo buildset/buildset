@@ -35,14 +35,22 @@ func (c *Client) GetUserByRef(ctx context.Context, userRef string) (authapi.User
 func (c *Client) ListUsers(ctx context.Context, limit int) ([]authapi.User, error) {
 	var response authapi.ListUsersResponse
 
-	if err := c.call.Call(ctx, authapi.PathListUsers, authapi.ListUsersRequest{Limit: limit}, &response); err != nil {
+	if err := c.call.Call(
+		ctx,
+		authapi.PathListUsers,
+		authapi.ListUsersRequest{Limit: limit},
+		&response,
+	); err != nil {
 		return nil, err
 	}
 
 	return response.Users, nil
 }
 
-func (c *Client) UpdateProfile(ctx context.Context, userRef, username, name string) (authapi.User, error) {
+func (c *Client) UpdateProfile(
+	ctx context.Context,
+	userRef, username, name string,
+) (authapi.User, error) {
 	return c.user(ctx, authapi.PathUpdateProfile, authapi.UpdateProfileRequest{
 		UserRef:  userRef,
 		Username: username,
@@ -51,7 +59,12 @@ func (c *Client) UpdateProfile(ctx context.Context, userRef, username, name stri
 }
 
 func (c *Client) DeleteUser(ctx context.Context, userRef string) error {
-	return c.call.Call(ctx, authapi.PathDeleteUser, authapi.DeleteUserRequest{UserRef: userRef}, nil)
+	return c.call.Call(
+		ctx,
+		authapi.PathDeleteUser,
+		authapi.DeleteUserRequest{UserRef: userRef},
+		nil,
+	)
 }
 
 func (c *Client) SetupOpen(ctx context.Context) (bool, error) {

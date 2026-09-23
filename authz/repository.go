@@ -17,7 +17,13 @@ type Repository interface {
 	InsertSubjectRole(ctx context.Context, subject, role string, grantedAt time.Time) error
 	DeleteSubjectRole(ctx context.Context, subject, role string) error
 
-	InsertGrants(ctx context.Context, subject string, actions []string, resource string, grantedAt time.Time) error
+	InsertGrants(
+		ctx context.Context,
+		subject string,
+		actions []string,
+		resource string,
+		grantedAt time.Time,
+	) error
 
 	DeleteBySubject(ctx context.Context, subject string) error
 	DeleteByResource(ctx context.Context, resource string) error

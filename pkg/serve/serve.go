@@ -87,7 +87,10 @@ func Handler(opts Options) http.Handler {
 	}
 
 	// The identifier is applied first so everything below it can log it.
-	return WithRequestID(opts.TrustRequestID, RecoverPanics(opts.Logger, LogRequests(opts.Logger, handler)))
+	return WithRequestID(
+		opts.TrustRequestID,
+		RecoverPanics(opts.Logger, LogRequests(opts.Logger, handler)),
+	)
 }
 
 // Run serves until the context is cancelled, then shuts down gracefully.

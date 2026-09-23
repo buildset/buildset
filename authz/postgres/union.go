@@ -11,7 +11,12 @@ import (
 
 // squirrel has no vocabulary for UNION, so the halves are built separately and joined here, which
 // keeps the arguments ordered and the placeholders numbered correctly.
-func union(ctx context.Context, db squirrel.QueryerContext, format squirrel.PlaceholderFormat, parts ...squirrel.SelectBuilder) (*sql.Rows, error) {
+func union(
+	ctx context.Context,
+	db squirrel.QueryerContext,
+	format squirrel.PlaceholderFormat,
+	parts ...squirrel.SelectBuilder,
+) (*sql.Rows, error) {
 	var (
 		clauses   []string
 		arguments []any

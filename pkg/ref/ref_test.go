@@ -12,9 +12,21 @@ func TestParse(t *testing.T) {
 	t.Parallel()
 
 	valid := map[string]ref.Ref{
-		"urn:auth:user:0199bf3c-7a1e-7c2b-9f10-3d4a5b6c7d8e": {Service: "auth", ResourceType: "user", ID: "0199bf3c-7a1e-7c2b-9f10-3d4a5b6c7d8e"},
-		"urn:content:post:01J8XK2P":                          {Service: "content", ResourceType: "post", ID: "01J8XK2P"},
-		"urn:media:image-file:a._~-B9":                       {Service: "media", ResourceType: "image-file", ID: "a._~-B9"},
+		"urn:auth:user:0199bf3c-7a1e-7c2b-9f10-3d4a5b6c7d8e": {
+			Service:      "auth",
+			ResourceType: "user",
+			ID:           "0199bf3c-7a1e-7c2b-9f10-3d4a5b6c7d8e",
+		},
+		"urn:content:post:01J8XK2P": {
+			Service:      "content",
+			ResourceType: "post",
+			ID:           "01J8XK2P",
+		},
+		"urn:media:image-file:a._~-B9": {
+			Service:      "media",
+			ResourceType: "image-file",
+			ID:           "a._~-B9",
+		},
 	}
 
 	for input, want := range valid {

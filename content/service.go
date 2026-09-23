@@ -201,7 +201,11 @@ func validateTitle(title string) (string, error) {
 	}
 
 	if len(trimmed) > MaxTitleLength {
-		return "", fmt.Errorf("%w: the title must be at most %d characters", ErrInvalidPost, MaxTitleLength)
+		return "", fmt.Errorf(
+			"%w: the title must be at most %d characters",
+			ErrInvalidPost,
+			MaxTitleLength,
+		)
 	}
 
 	return trimmed, nil

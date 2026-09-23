@@ -17,7 +17,11 @@ func (s *Server) can(ctx context.Context, user *User, action, resource string) (
 
 // requirePermission reports whether to continue. A denial on an administration page is a 403; on a
 // public URL the caller answers 404, so the existence of the resource stays hidden.
-func (s *Server) requirePermission(w http.ResponseWriter, r *http.Request, action, resource string) (*User, bool) {
+func (s *Server) requirePermission(
+	w http.ResponseWriter,
+	r *http.Request,
+	action, resource string,
+) (*User, bool) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
 		return nil, false

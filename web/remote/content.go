@@ -30,7 +30,11 @@ func (c *Content) GetPost(ctx context.Context, id string) (*web.Post, error) {
 	return toWebPost(post), nil
 }
 
-func (c *Content) ListPosts(ctx context.Context, status, authorRef string, limit int) ([]web.Post, error) {
+func (c *Content) ListPosts(
+	ctx context.Context,
+	status, authorRef string,
+	limit int,
+) ([]web.Post, error) {
 	posts, err := c.client.ListPosts(ctx, status, authorRef, limit)
 	if err != nil {
 		return nil, translate(err)
@@ -44,7 +48,10 @@ func (c *Content) ListPosts(ctx context.Context, status, authorRef string, limit
 	return converted, nil
 }
 
-func (c *Content) CreatePost(ctx context.Context, authorRef, title, body, contentType string) (*web.Post, error) {
+func (c *Content) CreatePost(
+	ctx context.Context,
+	authorRef, title, body, contentType string,
+) (*web.Post, error) {
 	post, err := c.client.CreatePost(ctx, authorRef, title, body, contentType)
 	if err != nil {
 		return nil, translate(err)
@@ -53,7 +60,10 @@ func (c *Content) CreatePost(ctx context.Context, authorRef, title, body, conten
 	return toWebPost(post), nil
 }
 
-func (c *Content) UpdatePost(ctx context.Context, id, title, body, contentType string) (*web.Post, error) {
+func (c *Content) UpdatePost(
+	ctx context.Context,
+	id, title, body, contentType string,
+) (*web.Post, error) {
 	post, err := c.client.UpdatePost(ctx, id, title, body, contentType)
 	if err != nil {
 		return nil, translate(err)

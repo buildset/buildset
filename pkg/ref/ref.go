@@ -53,7 +53,12 @@ func MustNew(service, resourceType, id string) Ref {
 func Parse(s string) (Ref, error) {
 	segments := strings.Split(s, separator)
 	if len(segments) != segmentCount {
-		return Ref{}, fmt.Errorf("%w: want %d colon-separated segments, got %d", ErrInvalid, segmentCount, len(segments))
+		return Ref{}, fmt.Errorf(
+			"%w: want %d colon-separated segments, got %d",
+			ErrInvalid,
+			segmentCount,
+			len(segments),
+		)
 	}
 
 	// RFC 8141 makes the scheme case-insensitive, but every stored reference is produced here, so
@@ -95,7 +100,12 @@ func validateName(segment, value string, maxLength int) error {
 	}
 
 	if len(value) > maxLength {
-		return fmt.Errorf("%w: %s segment is longer than %d characters", ErrInvalid, segment, maxLength)
+		return fmt.Errorf(
+			"%w: %s segment is longer than %d characters",
+			ErrInvalid,
+			segment,
+			maxLength,
+		)
 	}
 
 	for i, c := range value {
@@ -104,7 +114,13 @@ func validateName(segment, value string, maxLength int) error {
 		case c >= '0' && c <= '9' && i > 0:
 		case c == '-' && i > 0:
 		default:
-			return fmt.Errorf("%w: %s segment contains %q at position %d", ErrInvalid, segment, c, i)
+			return fmt.Errorf(
+				"%w: %s segment contains %q at position %d",
+				ErrInvalid,
+				segment,
+				c,
+				i,
+			)
 		}
 	}
 

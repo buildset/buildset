@@ -26,7 +26,12 @@ func (a *Authz) Can(ctx context.Context, subject, action, resource string) (bool
 	return allowed, translate(err)
 }
 
-func (a *Authz) Grant(ctx context.Context, subject string, actions []string, resource string) error {
+func (a *Authz) Grant(
+	ctx context.Context,
+	subject string,
+	actions []string,
+	resource string,
+) error {
 	return translate(a.client.Grant(ctx, subject, actions, resource))
 }
 

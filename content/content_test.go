@@ -65,16 +65,28 @@ func TestCreatePostRejectsBadInput(t *testing.T) {
 	service := newService(t)
 	ctx := t.Context()
 
-	_, err := service.CreatePost(ctx, content.CreatePostRequest{AuthorRef: "not-a-reference", Title: "Title"})
+	_, err := service.CreatePost(
+		ctx,
+		content.CreatePostRequest{AuthorRef: "not-a-reference", Title: "Title"},
+	)
 	require.ErrorIs(t, err, content.ErrInvalidPost)
 
 	_, err = service.CreatePost(ctx, content.CreatePostRequest{AuthorRef: adaRef, Title: "   "})
 	require.ErrorIs(t, err, content.ErrInvalidPost)
 
-	_, err = service.CreatePost(ctx, content.CreatePostRequest{AuthorRef: adaRef, Title: strings.Repeat("a", content.MaxTitleLength+1)})
+	_, err = service.CreatePost(
+		ctx,
+		content.CreatePostRequest{
+			AuthorRef: adaRef,
+			Title:     strings.Repeat("a", content.MaxTitleLength+1),
+		},
+	)
 	require.ErrorIs(t, err, content.ErrInvalidPost)
 
-	_, err = service.CreatePost(ctx, content.CreatePostRequest{AuthorRef: adaRef, Title: "Title", ContentType: "text/markdown"})
+	_, err = service.CreatePost(
+		ctx,
+		content.CreatePostRequest{AuthorRef: adaRef, Title: "Title", ContentType: "text/markdown"},
+	)
 	require.ErrorIs(t, err, content.ErrUnsupportedContent)
 }
 
@@ -103,7 +115,12 @@ func TestStatusLifecycle(t *testing.T) {
 
 	republished, err := service.SetStatus(ctx, post.ID, content.StatusPublished)
 	require.NoError(t, err)
-	assert.Equal(t, firstPublication, *republished.PublishedAt, "the original publication date must not move")
+	assert.Equal(
+		t,
+		firstPublication,
+		*republished.PublishedAt,
+		"the original publication date must not move",
+	)
 
 	_, err = service.SetStatus(ctx, post.ID, content.Status("deleted"))
 	require.ErrorIs(t, err, content.ErrInvalidStatus)
@@ -129,7 +146,10 @@ func TestListPostsFilters(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, byAda, 2)
 
-	adaDrafts, err := service.ListPosts(ctx, content.PostFilter{AuthorRef: adaRef, Status: content.StatusDraft})
+	adaDrafts, err := service.ListPosts(
+		ctx,
+		content.PostFilter{AuthorRef: adaRef, Status: content.StatusDraft},
+	)
 	require.NoError(t, err)
 	require.Len(t, adaDrafts, 1)
 	assert.Equal(t, adaDraft.ID, adaDrafts[0].ID)
@@ -155,7 +175,10 @@ func TestDeletePost(t *testing.T) {
 func TestRenderHTML(t *testing.T) {
 	t.Parallel()
 
-	rendered, err := content.RenderHTML(content.ContentTypePlainText, "First line.\nSecond line.\n\nNew paragraph.")
+	rendered, err := content.RenderHTML(
+		content.ContentTypePlainText,
+		"First line.\nSecond line.\n\nNew paragraph.",
+	)
 	require.NoError(t, err)
 	assert.Equal(t, "<p>First line.<br>Second line.</p><p>New paragraph.</p>", string(rendered))
 

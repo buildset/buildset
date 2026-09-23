@@ -35,7 +35,10 @@ func Run(t *testing.T, newRepository New) {
 	t.Run("UpdatePost reports a missing post", func(t *testing.T) {
 		repository := newRepository(t)
 
-		err := repository.UpdatePost(context.Background(), post(alice, "Ghost", content.StatusDraft))
+		err := repository.UpdatePost(
+			context.Background(),
+			post(alice, "Ghost", content.StatusDraft),
+		)
 		require.ErrorIs(t, err, content.ErrPostNotFound)
 	})
 

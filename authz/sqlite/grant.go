@@ -18,12 +18,23 @@ const (
 )
 
 func grantColumns() []string {
-	return []string{grantColumnSubjectRef, grantColumnAction, grantColumnResourceRef, grantColumnGrantedAt}
+	return []string{
+		grantColumnSubjectRef,
+		grantColumnAction,
+		grantColumnResourceRef,
+		grantColumnGrantedAt,
+	}
 }
 
 // InsertGrants writes every action for one resource in a single transaction, so a caller granting
 // ownership never ends up with half the actions.
-func (r *Repository) InsertGrants(ctx context.Context, subject string, actions []string, resource string, grantedAt time.Time) error {
+func (r *Repository) InsertGrants(
+	ctx context.Context,
+	subject string,
+	actions []string,
+	resource string,
+	grantedAt time.Time,
+) error {
 	if len(actions) == 0 {
 		return nil
 	}

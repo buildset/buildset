@@ -46,7 +46,12 @@ func TestRegistryHashAndVerify(t *testing.T) {
 
 	encoded, err := registry.Hash("correct horse battery")
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(encoded, "$2a$"), "bcrypt hashes carry their identifier: %s", encoded)
+	assert.True(
+		t,
+		strings.HasPrefix(encoded, "$2a$"),
+		"bcrypt hashes carry their identifier: %s",
+		encoded,
+	)
 
 	require.NoError(t, registry.Verify(encoded, "correct horse battery"))
 	require.ErrorIs(t, registry.Verify(encoded, "wrong horse battery"), hash.ErrMismatch)
@@ -58,10 +63,18 @@ func TestRegistryDispatchesOnIdentifier(t *testing.T) {
 	registry := newRegistry(t)
 
 	require.NoError(t, registry.Verify("$legacy$hunter2hunter2", "hunter2hunter2"))
-	require.ErrorIs(t, registry.Verify("$legacy$hunter2hunter2", "something else"), hash.ErrMismatch)
+	require.ErrorIs(
+		t,
+		registry.Verify("$legacy$hunter2hunter2", "something else"),
+		hash.ErrMismatch,
+	)
 
 	// The seam that lets argon2id arrive later: an unregistered identifier is reported, not guessed at.
-	require.ErrorIs(t, registry.Verify("$argon2id$v=19$m=65536,t=3,p=4$c2FsdA$aGFzaA", "whatever"), hash.ErrUnknownAlgorithm)
+	require.ErrorIs(
+		t,
+		registry.Verify("$argon2id$v=19$m=65536,t=3,p=4$c2FsdA$aGFzaA", "whatever"),
+		hash.ErrUnknownAlgorithm,
+	)
 	require.ErrorIs(t, registry.Verify("not-a-hash", "whatever"), hash.ErrUnknownAlgorithm)
 }
 

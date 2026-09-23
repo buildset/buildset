@@ -130,7 +130,13 @@ func (h *Handler) deletePost(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, contentapi.Empty{})
 }
 
-func (h *Handler) post(w http.ResponseWriter, r *http.Request, operation string, post *content.Post, err error) {
+func (h *Handler) post(
+	w http.ResponseWriter,
+	r *http.Request,
+	operation string,
+	post *content.Post,
+	err error,
+) {
 	if err != nil {
 		h.fail(w, r, operation, err)
 

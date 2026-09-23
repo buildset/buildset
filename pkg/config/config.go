@@ -60,7 +60,11 @@ func (s Server) Validate() error {
 	}
 
 	if s.ShutdownTimeout <= 0 {
-		return fmt.Errorf("%w: SHUTDOWN_TIMEOUT must be positive, got %s", errInvalidConfig, s.ShutdownTimeout)
+		return fmt.Errorf(
+			"%w: SHUTDOWN_TIMEOUT must be positive, got %s",
+			errInvalidConfig,
+			s.ShutdownTimeout,
+		)
 	}
 
 	return nil
@@ -107,7 +111,12 @@ func LoadURL(key string) (string, error) {
 	}
 
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return "", fmt.Errorf("%w: %s must be an http or https URL, got %q", errInvalidConfig, key, raw)
+		return "", fmt.Errorf(
+			"%w: %s must be an http or https URL, got %q",
+			errInvalidConfig,
+			key,
+			raw,
+		)
 	}
 
 	if parsed.Host == "" {

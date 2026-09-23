@@ -120,7 +120,13 @@ func (r Runner) Up(ctx context.Context, db *sql.DB) error {
 		record, ok := byVersion[m.version]
 		if ok {
 			if record.Checksum != m.checksum {
-				return fmt.Errorf("%w: %s (recorded %s, found %s)", ErrChecksumMismatch, m.fileName, record.Checksum, m.checksum)
+				return fmt.Errorf(
+					"%w: %s (recorded %s, found %s)",
+					ErrChecksumMismatch,
+					m.fileName,
+					record.Checksum,
+					m.checksum,
+				)
 			}
 
 			delete(byVersion, m.version)
@@ -147,7 +153,10 @@ func (r Runner) Applied(ctx context.Context, db *sql.DB) ([]Record, error) {
 }
 
 func (r Runner) applied(ctx context.Context, db queryer) ([]Record, error) {
-	query := fmt.Sprintf(`SELECT version, name, checksum, applied_at FROM %s ORDER BY version`, r.TableName)
+	query := fmt.Sprintf(
+		`SELECT version, name, checksum, applied_at FROM %s ORDER BY version`,
+		r.TableName,
+	)
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
@@ -163,7 +172,12 @@ func (r Runner) applied(ctx context.Context, db queryer) ([]Record, error) {
 			appliedAt any
 		)
 
-		if err := rows.Scan(&record.Version, &record.Name, &record.Checksum, &appliedAt); err != nil {
+		if err := rows.Scan(
+			&record.Version,
+			&record.Name,
+			&record.Checksum,
+			&appliedAt,
+		); err != nil {
 			return nil, fmt.Errorf("scan applied migration: %w", err)
 		}
 
@@ -205,7 +219,14 @@ func (r Runner) apply(ctx context.Context, db queryer, m migration) error {
 
 	insert := r.dialect().Insert(r.TableName)
 
-	if _, err := tx.ExecContext(ctx, insert, m.version, m.name, m.checksum, r.dialect().AppliedAt(time.Now())); err != nil {
+	if _, err := tx.ExecContext(
+		ctx,
+		insert,
+		m.version,
+		m.name,
+		m.checksum,
+		r.dialect().AppliedAt(time.Now()),
+	); err != nil {
 		return fmt.Errorf("record migration: %w", err)
 	}
 
@@ -232,7 +253,11 @@ func (r Runner) load() ([]migration, error) {
 
 		matches := fileNamePattern.FindStringSubmatch(entry.Name())
 		if matches == nil {
-			return nil, fmt.Errorf("%w: %q does not match NNNN_name.sql", errInvalidFileName, entry.Name())
+			return nil, fmt.Errorf(
+				"%w: %q does not match NNNN_name.sql",
+				errInvalidFileName,
+				entry.Name(),
+			)
 		}
 
 		version, err := strconv.Atoi(matches[1])
@@ -241,7 +266,13 @@ func (r Runner) load() ([]migration, error) {
 		}
 
 		if other, ok := seen[version]; ok {
-			return nil, fmt.Errorf("%w: %d used by both %q and %q", errDuplicateVersion, version, other, entry.Name())
+			return nil, fmt.Errorf(
+				"%w: %d used by both %q and %q",
+				errDuplicateVersion,
+				version,
+				other,
+				entry.Name(),
+			)
 		}
 
 		seen[version] = entry.Name()

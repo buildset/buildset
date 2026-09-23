@@ -94,7 +94,12 @@ func (c *Client) Call(ctx context.Context, path string, request, response any) e
 		return c.wrap(path, fmt.Errorf("encode request: %w", err))
 	}
 
-	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+path, bytes.NewReader(body))
+	httpRequest, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		c.baseURL+path,
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return c.wrap(path, fmt.Errorf("build request: %w", err))
 	}
@@ -150,16 +155,27 @@ func decodeError(response *http.Response) error {
 
 	mediaType, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
 	if err != nil || mediaType != "application/json" {
-		return fmt.Errorf("%w: status %d with content type %q", errUnexpectedAnswer, response.StatusCode, response.Header.Get("Content-Type"))
+		return fmt.Errorf(
+			"%w: status %d with content type %q",
+			errUnexpectedAnswer,
+			response.StatusCode,
+			response.Header.Get("Content-Type"),
+		)
 	}
 
 	var envelope Envelope
-	if err := json.NewDecoder(io.LimitReader(response.Body, maxErrorBytes)).Decode(&envelope); err != nil {
+	if err := json.NewDecoder(io.LimitReader(response.Body, maxErrorBytes)).
+		Decode(&envelope); err != nil {
 		return fmt.Errorf("status %d with undecodable body: %w", response.StatusCode, err)
 	}
 
 	if !envelope.Code.Known() {
-		return fmt.Errorf("%w: status %d with unknown code %q", errUnexpectedAnswer, response.StatusCode, envelope.Code)
+		return fmt.Errorf(
+			"%w: status %d with unknown code %q",
+			errUnexpectedAnswer,
+			response.StatusCode,
+			envelope.Code,
+		)
 	}
 
 	return &Error{Code: envelope.Code, Message: envelope.Message}

@@ -10,9 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/nasermirzaei89/env"
-
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/nasermirzaei89/env"
 	_ "modernc.org/sqlite"
 )
 
@@ -55,14 +54,28 @@ func (c Config) Validate() error {
 		}
 	case DriverPostgres:
 		if c.DSN == "" {
-			return fmt.Errorf("%w: DATABASE_DSN must not be empty when DATABASE_DRIVER is %q", errInvalidConfig, DriverPostgres)
+			return fmt.Errorf(
+				"%w: DATABASE_DSN must not be empty when DATABASE_DRIVER is %q",
+				errInvalidConfig,
+				DriverPostgres,
+			)
 		}
 
 		if c.MaxOpenConns < 1 {
-			return fmt.Errorf("%w: DATABASE_MAX_OPEN_CONNS must be positive, got %d", errInvalidConfig, c.MaxOpenConns)
+			return fmt.Errorf(
+				"%w: DATABASE_MAX_OPEN_CONNS must be positive, got %d",
+				errInvalidConfig,
+				c.MaxOpenConns,
+			)
 		}
 	default:
-		return fmt.Errorf("%w: DATABASE_DRIVER must be %q or %q, got %q", errInvalidConfig, DriverSQLite, DriverPostgres, c.Driver)
+		return fmt.Errorf(
+			"%w: DATABASE_DRIVER must be %q or %q, got %q",
+			errInvalidConfig,
+			DriverSQLite,
+			DriverPostgres,
+			c.Driver,
+		)
 	}
 
 	return nil

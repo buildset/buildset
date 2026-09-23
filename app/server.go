@@ -16,17 +16,19 @@ func Routes(cfg *Config, svc *services, logger *slog.Logger) (http.Handler, erro
 	mux := http.NewServeMux()
 
 	// Public sign-up is a configuration switch; otherwise creating an account takes a permission.
-	registrationPolicy := authui.RegistrationPolicyFunc(func(ctx context.Context, actorRef string) (bool, error) {
-		if cfg.Auth.RegistrationOpen {
-			return true, nil
-		}
+	registrationPolicy := authui.RegistrationPolicyFunc(
+		func(ctx context.Context, actorRef string) (bool, error) {
+			if cfg.Auth.RegistrationOpen {
+				return true, nil
+			}
 
-		if actorRef == "" {
-			return false, nil
-		}
+			if actorRef == "" {
+				return false, nil
+			}
 
-		return svc.authz.Can(ctx, actorRef, web.ActionUserCreate, web.AnyUserResource)
-	})
+			return svc.authz.Can(ctx, actorRef, web.ActionUserCreate, web.AnyUserResource)
+		},
+	)
 
 	authHandler, err := authui.NewHandler(svc.auth, registrationPolicy, authui.Config{
 		SessionCookieName: cfg.SessionCookieName,

@@ -26,7 +26,11 @@ func (c *Client) GetPost(ctx context.Context, id string) (contentapi.Post, error
 	return c.post(ctx, contentapi.PathGetPost, contentapi.GetPostRequest{ID: id})
 }
 
-func (c *Client) ListPosts(ctx context.Context, status, authorRef string, limit int) ([]contentapi.Post, error) {
+func (c *Client) ListPosts(
+	ctx context.Context,
+	status, authorRef string,
+	limit int,
+) ([]contentapi.Post, error) {
 	var response contentapi.ListPostsResponse
 
 	err := c.call.Call(ctx, contentapi.PathListPosts, contentapi.ListPostsRequest{
@@ -41,7 +45,10 @@ func (c *Client) ListPosts(ctx context.Context, status, authorRef string, limit 
 	return response.Posts, nil
 }
 
-func (c *Client) CreatePost(ctx context.Context, authorRef, title, body, contentType string) (contentapi.Post, error) {
+func (c *Client) CreatePost(
+	ctx context.Context,
+	authorRef, title, body, contentType string,
+) (contentapi.Post, error) {
 	return c.post(ctx, contentapi.PathCreatePost, contentapi.CreatePostRequest{
 		AuthorRef:   authorRef,
 		Title:       title,
@@ -50,7 +57,10 @@ func (c *Client) CreatePost(ctx context.Context, authorRef, title, body, content
 	})
 }
 
-func (c *Client) UpdatePost(ctx context.Context, id, title, body, contentType string) (contentapi.Post, error) {
+func (c *Client) UpdatePost(
+	ctx context.Context,
+	id, title, body, contentType string,
+) (contentapi.Post, error) {
 	return c.post(ctx, contentapi.PathUpdatePost, contentapi.UpdatePostRequest{
 		ID:          id,
 		Title:       title,
@@ -60,7 +70,11 @@ func (c *Client) UpdatePost(ctx context.Context, id, title, body, contentType st
 }
 
 func (c *Client) SetStatus(ctx context.Context, id, status string) (contentapi.Post, error) {
-	return c.post(ctx, contentapi.PathSetStatus, contentapi.SetStatusRequest{ID: id, Status: status})
+	return c.post(
+		ctx,
+		contentapi.PathSetStatus,
+		contentapi.SetStatusRequest{ID: id, Status: status},
+	)
 }
 
 func (c *Client) DeletePost(ctx context.Context, id string) error {

@@ -119,14 +119,21 @@ func Run(t *testing.T, newRepository New) {
 		require.Len(t, users, 3)
 
 		// "-" is 0x2D and "X" is 0x58, so byte order puts aa-bb first.
-		assert.Equal(t, []string{"aa-bb", "aaXbb", third.ID}, []string{users[0].ID, users[1].ID, users[2].ID})
+		assert.Equal(
+			t,
+			[]string{"aa-bb", "aaXbb", third.ID},
+			[]string{users[0].ID, users[1].ID, users[2].ID},
+		)
 	})
 
 	t.Run("ListUsers honours the limit", func(t *testing.T) {
 		repository := newRepository(t)
 
 		for i := range 5 {
-			require.NoError(t, repository.InsertUser(context.Background(), user(fmt.Sprintf("user%d", i))))
+			require.NoError(
+				t,
+				repository.InsertUser(context.Background(), user(fmt.Sprintf("user%d", i))),
+			)
 		}
 
 		users, err := repository.ListUsers(context.Background(), 2)
@@ -197,7 +204,13 @@ func Run(t *testing.T, newRepository New) {
 
 		alice := user("alice")
 		require.NoError(t, repository.InsertUser(context.Background(), alice))
-		require.NoError(t, repository.InsertSession(context.Background(), session(alice.ID, "hash-1", time.Now().Add(time.Hour))))
+		require.NoError(
+			t,
+			repository.InsertSession(
+				context.Background(),
+				session(alice.ID, "hash-1", time.Now().Add(time.Hour)),
+			),
+		)
 
 		later := time.Now().Add(time.Minute).UTC().Truncate(time.Millisecond)
 		require.NoError(t, repository.TouchSession(context.Background(), "session-hash-1", later))
@@ -214,10 +227,19 @@ func Run(t *testing.T, newRepository New) {
 		require.NoError(t, repository.InsertUser(context.Background(), alice))
 
 		for _, hash := range []string{"hash-1", "hash-2", "hash-3"} {
-			require.NoError(t, repository.InsertSession(context.Background(), session(alice.ID, hash, time.Now().Add(time.Hour))))
+			require.NoError(
+				t,
+				repository.InsertSession(
+					context.Background(),
+					session(alice.ID, hash, time.Now().Add(time.Hour)),
+				),
+			)
 		}
 
-		require.NoError(t, repository.DeleteSessionsByUser(context.Background(), alice.ID, "session-hash-2"))
+		require.NoError(
+			t,
+			repository.DeleteSessionsByUser(context.Background(), alice.ID, "session-hash-2"),
+		)
 
 		_, err := repository.GetSessionByTokenHash(context.Background(), "hash-2")
 		require.NoError(t, err)
@@ -233,7 +255,13 @@ func Run(t *testing.T, newRepository New) {
 
 		alice := user("alice")
 		require.NoError(t, repository.InsertUser(context.Background(), alice))
-		require.NoError(t, repository.InsertSession(context.Background(), session(alice.ID, "hash-1", time.Now().Add(time.Hour))))
+		require.NoError(
+			t,
+			repository.InsertSession(
+				context.Background(),
+				session(alice.ID, "hash-1", time.Now().Add(time.Hour)),
+			),
+		)
 
 		require.NoError(t, repository.DeleteSessionsByUser(context.Background(), alice.ID, ""))
 
@@ -249,9 +277,24 @@ func Run(t *testing.T, newRepository New) {
 
 		now := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 
-		require.NoError(t, repository.InsertSession(context.Background(), session(alice.ID, "past", now.Add(-time.Hour))))
-		require.NoError(t, repository.InsertSession(context.Background(), session(alice.ID, "exact", now)))
-		require.NoError(t, repository.InsertSession(context.Background(), session(alice.ID, "future", now.Add(time.Hour))))
+		require.NoError(
+			t,
+			repository.InsertSession(
+				context.Background(),
+				session(alice.ID, "past", now.Add(-time.Hour)),
+			),
+		)
+		require.NoError(
+			t,
+			repository.InsertSession(context.Background(), session(alice.ID, "exact", now)),
+		)
+		require.NoError(
+			t,
+			repository.InsertSession(
+				context.Background(),
+				session(alice.ID, "future", now.Add(time.Hour)),
+			),
+		)
 
 		// The comparison is <=, so a session expiring exactly now goes.
 		deleted, err := repository.DeleteExpiredSessions(context.Background(), now)

@@ -38,7 +38,12 @@ func (c *Client) Can(ctx context.Context, subject, action, resource string) (boo
 	return response.Allowed, nil
 }
 
-func (c *Client) Grant(ctx context.Context, subject string, actions []string, resource string) error {
+func (c *Client) Grant(
+	ctx context.Context,
+	subject string,
+	actions []string,
+	resource string,
+) error {
 	return c.call.Call(ctx, authzapi.PathGrant, authzapi.GrantRequest{
 		Subject:  subject,
 		Actions:  actions,
@@ -47,17 +52,32 @@ func (c *Client) Grant(ctx context.Context, subject string, actions []string, re
 }
 
 func (c *Client) AssignRole(ctx context.Context, subject, role string) error {
-	return c.call.Call(ctx, authzapi.PathAssignRole, authzapi.RoleRequest{Subject: subject, Role: role}, nil)
+	return c.call.Call(
+		ctx,
+		authzapi.PathAssignRole,
+		authzapi.RoleRequest{Subject: subject, Role: role},
+		nil,
+	)
 }
 
 func (c *Client) RevokeRole(ctx context.Context, subject, role string) error {
-	return c.call.Call(ctx, authzapi.PathRevokeRole, authzapi.RoleRequest{Subject: subject, Role: role}, nil)
+	return c.call.Call(
+		ctx,
+		authzapi.PathRevokeRole,
+		authzapi.RoleRequest{Subject: subject, Role: role},
+		nil,
+	)
 }
 
 func (c *Client) SubjectRoles(ctx context.Context, subject string) ([]string, error) {
 	var response authzapi.RolesResponse
 
-	if err := c.call.Call(ctx, authzapi.PathSubjectRoles, authzapi.SubjectRequest{Subject: subject}, &response); err != nil {
+	if err := c.call.Call(
+		ctx,
+		authzapi.PathSubjectRoles,
+		authzapi.SubjectRequest{Subject: subject},
+		&response,
+	); err != nil {
 		return nil, err
 	}
 
@@ -75,9 +95,19 @@ func (c *Client) ListRoles(ctx context.Context) ([]string, error) {
 }
 
 func (c *Client) PurgeResource(ctx context.Context, resource string) error {
-	return c.call.Call(ctx, authzapi.PathPurgeResource, authzapi.ResourceRequest{Resource: resource}, nil)
+	return c.call.Call(
+		ctx,
+		authzapi.PathPurgeResource,
+		authzapi.ResourceRequest{Resource: resource},
+		nil,
+	)
 }
 
 func (c *Client) PurgeSubject(ctx context.Context, subject string) error {
-	return c.call.Call(ctx, authzapi.PathPurgeSubject, authzapi.SubjectRequest{Subject: subject}, nil)
+	return c.call.Call(
+		ctx,
+		authzapi.PathPurgeSubject,
+		authzapi.SubjectRequest{Subject: subject},
+		nil,
+	)
 }

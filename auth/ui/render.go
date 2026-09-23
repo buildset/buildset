@@ -29,7 +29,13 @@ type pageData struct {
 // One template set per page, each with its own copy of the layout, because every page defines the
 // same "content" block.
 func parseTemplates() (map[string]*template.Template, error) {
-	names := []string{"setup.gohtml", "login.gohtml", "register.gohtml", "password.gohtml", "error.gohtml"}
+	names := []string{
+		"setup.gohtml",
+		"login.gohtml",
+		"register.gohtml",
+		"password.gohtml",
+		"error.gohtml",
+	}
 	pages := make(map[string]*template.Template, len(names))
 
 	for _, name := range names {
@@ -46,7 +52,13 @@ func parseTemplates() (map[string]*template.Template, error) {
 
 // The template runs into a buffer first, so a failure becomes an error page rather than a
 // truncated one sent with a success status.
-func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, page string, data pageData) {
+func (h *Handler) render(
+	w http.ResponseWriter,
+	r *http.Request,
+	status int,
+	page string,
+	data pageData,
+) {
 	tmpl, ok := h.templates[page]
 	if !ok {
 		h.logger.ErrorContext(r.Context(), "unknown template", slog.String("page", page))
@@ -58,7 +70,12 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, pag
 	var buf bytes.Buffer
 
 	if err := tmpl.ExecuteTemplate(&buf, "layout.gohtml", data); err != nil {
-		h.logger.ErrorContext(r.Context(), "execute template", slog.String("page", page), slog.Any("error", err))
+		h.logger.ErrorContext(
+			r.Context(),
+			"execute template",
+			slog.String("page", page),
+			slog.Any("error", err),
+		)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -72,11 +89,22 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, pag
 }
 
 func (h *Handler) renderError(w http.ResponseWriter, r *http.Request, status int, message string) {
-	h.render(w, r, status, "error.gohtml", pageData{Title: http.StatusText(status), Message: message})
+	h.render(
+		w,
+		r,
+		status,
+		"error.gohtml",
+		pageData{Title: http.StatusText(status), Message: message},
+	)
 }
 
 // renderInternalError hides the cause from the browser and puts it in the log instead.
-func (h *Handler) renderInternalError(w http.ResponseWriter, r *http.Request, err error, message string) {
+func (h *Handler) renderInternalError(
+	w http.ResponseWriter,
+	r *http.Request,
+	err error,
+	message string,
+) {
 	h.logger.ErrorContext(r.Context(), message, slog.Any("error", err))
 	h.renderError(w, r, http.StatusInternalServerError, "Something went wrong. Please try again.")
 }

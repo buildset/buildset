@@ -101,7 +101,12 @@ func (s *Service) RevokeRole(ctx context.Context, subject, role string) error {
 
 // Grant is how ownership is expressed: the service that creates a resource grants its creator the
 // actions over it.
-func (s *Service) Grant(ctx context.Context, subject string, actions []string, resource string) error {
+func (s *Service) Grant(
+	ctx context.Context,
+	subject string,
+	actions []string,
+	resource string,
+) error {
 	if err := validateSubject(subject); err != nil {
 		return err
 	}
@@ -120,7 +125,13 @@ func (s *Service) Grant(ctx context.Context, subject string, actions []string, r
 		}
 	}
 
-	if err := s.repository.InsertGrants(ctx, subject, actions, resource, time.Now().UTC()); err != nil {
+	if err := s.repository.InsertGrants(
+		ctx,
+		subject,
+		actions,
+		resource,
+		time.Now().UTC(),
+	); err != nil {
 		return fmt.Errorf("insert grants: %w", err)
 	}
 

@@ -37,7 +37,10 @@ func newSplitHarness(t *testing.T) *harness {
 	browser := newBrowser(t)
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	database := storage.Config{Driver: storage.DriverSQLite, Path: filepath.Join(t.TempDir(), "test.db")}
+	database := storage.Config{
+		Driver: storage.DriverSQLite,
+		Path:   filepath.Join(t.TempDir(), "test.db"),
+	}
 
 	authzURL := startAuthz(t, logger, database)
 	contentURL := startContent(t, logger, database)
@@ -94,7 +97,10 @@ func startAuthz(t *testing.T, logger *slog.Logger, database storage.Config) stri
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = service.Close() })
 
-	return startServer(t, serve.Options{Name: "authz", Logger: logger, Routes: service.Routes(), Ready: service.Ping})
+	return startServer(
+		t,
+		serve.Options{Name: "authz", Logger: logger, Routes: service.Routes(), Ready: service.Ping},
+	)
 }
 
 func startContent(t *testing.T, logger *slog.Logger, database storage.Config) string {
@@ -107,7 +113,15 @@ func startContent(t *testing.T, logger *slog.Logger, database storage.Config) st
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = service.Close() })
 
-	return startServer(t, serve.Options{Name: "content", Logger: logger, Routes: service.Routes(), Ready: service.Ping})
+	return startServer(
+		t,
+		serve.Options{
+			Name:   "content",
+			Logger: logger,
+			Routes: service.Routes(),
+			Ready:  service.Ping,
+		},
+	)
 }
 
 func startAuth(t *testing.T, logger *slog.Logger, database storage.Config, authzURL string) string {
@@ -130,7 +144,11 @@ func startAuth(t *testing.T, logger *slog.Logger, database storage.Config, authz
 	t.Cleanup(func() { _ = service.Close() })
 
 	return startServer(t, serve.Options{
-		Name: "auth", Logger: logger, Routes: service.Routes(), Ready: service.Ping, CrossOrigin: true,
+		Name:        "auth",
+		Logger:      logger,
+		Routes:      service.Routes(),
+		Ready:       service.Ping,
+		CrossOrigin: true,
 	})
 }
 

@@ -52,7 +52,10 @@ func (a *Auth) ListUsers(ctx context.Context, limit int) ([]web.User, error) {
 	return converted, nil
 }
 
-func (a *Auth) UpdateProfile(ctx context.Context, userRef, username, name string) (*web.User, error) {
+func (a *Auth) UpdateProfile(
+	ctx context.Context,
+	userRef, username, name string,
+) (*web.User, error) {
 	user, err := a.client.UpdateProfile(ctx, userRef, username, name)
 	if err != nil {
 		return nil, translate(err)

@@ -52,7 +52,10 @@ func (f *fakeAuth) ListUsers(context.Context, int) ([]web.User, error) {
 	return users, nil
 }
 
-func (f *fakeAuth) UpdateProfile(_ context.Context, userRef, username, name string) (*web.User, error) {
+func (f *fakeAuth) UpdateProfile(
+	_ context.Context,
+	userRef, username, name string,
+) (*web.User, error) {
 	user, ok := f.users[userRef]
 	if !ok {
 		return nil, web.NewError(web.ErrNotFound, "no user")
@@ -99,7 +102,12 @@ func (f *fakeAuthz) Can(_ context.Context, subject, action, resource string) (bo
 	return f.permissions[subject+"|"+action+"|"+resource], nil
 }
 
-func (f *fakeAuthz) Grant(_ context.Context, subject string, actions []string, resource string) error {
+func (f *fakeAuthz) Grant(
+	_ context.Context,
+	subject string,
+	actions []string,
+	resource string,
+) error {
 	f.grants = append(f.grants, grantCall{Subject: subject, Actions: actions, Resource: resource})
 
 	return nil
@@ -114,7 +122,10 @@ func (f *fakeAuthz) AssignRole(_ context.Context, subject, role string) error {
 }
 
 func (f *fakeAuthz) RevokeRole(_ context.Context, subject, role string) error {
-	f.roles[subject] = slices.DeleteFunc(f.roles[subject], func(held string) bool { return held == role })
+	f.roles[subject] = slices.DeleteFunc(
+		f.roles[subject],
+		func(held string) bool { return held == role },
+	)
 
 	return nil
 }
@@ -158,7 +169,11 @@ func (f *fakeContent) GetPost(_ context.Context, id string) (*web.Post, error) {
 	return post, nil
 }
 
-func (f *fakeContent) ListPosts(_ context.Context, status, authorRef string, _ int) ([]web.Post, error) {
+func (f *fakeContent) ListPosts(
+	_ context.Context,
+	status, authorRef string,
+	_ int,
+) ([]web.Post, error) {
 	var posts []web.Post
 
 	for _, post := range f.posts {
@@ -176,7 +191,10 @@ func (f *fakeContent) ListPosts(_ context.Context, status, authorRef string, _ i
 	return posts, nil
 }
 
-func (f *fakeContent) CreatePost(_ context.Context, authorRef, title, body, contentType string) (*web.Post, error) {
+func (f *fakeContent) CreatePost(
+	_ context.Context,
+	authorRef, title, body, contentType string,
+) (*web.Post, error) {
 	if strings.TrimSpace(title) == "" {
 		return nil, web.NewError(web.ErrInvalidInput, "a title is required")
 	}
@@ -197,7 +215,10 @@ func (f *fakeContent) CreatePost(_ context.Context, authorRef, title, body, cont
 	return post, nil
 }
 
-func (f *fakeContent) UpdatePost(_ context.Context, id, title, body, contentType string) (*web.Post, error) {
+func (f *fakeContent) UpdatePost(
+	_ context.Context,
+	id, title, body, contentType string,
+) (*web.Post, error) {
 	post, ok := f.posts[id]
 	if !ok {
 		return nil, web.NewError(web.ErrNotFound, "no post")

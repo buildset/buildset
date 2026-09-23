@@ -46,7 +46,13 @@ func NewRegistry(preferred Algorithm, others ...Algorithm) (*Registry, error) {
 	for _, algorithm := range append([]Algorithm{preferred}, others...) {
 		for _, identifier := range algorithm.Identifiers() {
 			if existing, ok := registry.algorithms[identifier]; ok {
-				return nil, fmt.Errorf("%w: %q claimed by both %s and %s", errDuplicateIdentifier, identifier, existing.Name(), algorithm.Name())
+				return nil, fmt.Errorf(
+					"%w: %q claimed by both %s and %s",
+					errDuplicateIdentifier,
+					identifier,
+					existing.Name(),
+					algorithm.Name(),
+				)
 			}
 
 			registry.algorithms[identifier] = algorithm

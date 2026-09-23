@@ -19,7 +19,13 @@ type Bcrypt struct {
 
 func NewBcrypt(cost int) (*Bcrypt, error) {
 	if cost < bcrypt.MinCost || cost > bcrypt.MaxCost {
-		return nil, fmt.Errorf("%w: must be between %d and %d, got %d", errInvalidBcryptCost, bcrypt.MinCost, bcrypt.MaxCost, cost)
+		return nil, fmt.Errorf(
+			"%w: must be between %d and %d, got %d",
+			errInvalidBcryptCost,
+			bcrypt.MinCost,
+			bcrypt.MaxCost,
+			cost,
+		)
 	}
 
 	return &Bcrypt{cost: cost}, nil
@@ -36,7 +42,11 @@ func (b *Bcrypt) Identifiers() []string {
 
 func (b *Bcrypt) Hash(password string) (string, error) {
 	if len(password) > MaxBcryptPasswordLength {
-		return "", fmt.Errorf("%w: bcrypt accepts at most %d bytes", ErrPasswordTooLong, MaxBcryptPasswordLength)
+		return "", fmt.Errorf(
+			"%w: bcrypt accepts at most %d bytes",
+			ErrPasswordTooLong,
+			MaxBcryptPasswordLength,
+		)
 	}
 
 	encoded, err := bcrypt.GenerateFromPassword([]byte(password), b.cost)

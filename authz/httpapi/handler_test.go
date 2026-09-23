@@ -52,7 +52,8 @@ func post(t *testing.T, server *httptest.Server, path string, request any) (int,
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	response, err := server.Client().Post(server.URL+path, "application/json", bytes.NewReader(body))
+	response, err := server.Client().
+		Post(server.URL+path, "application/json", bytes.NewReader(body))
 	require.NoError(t, err)
 	defer func() { _ = response.Body.Close() }()
 
@@ -65,7 +66,12 @@ func post(t *testing.T, server *httptest.Server, path string, request any) (int,
 func TestCan(t *testing.T) {
 	server := newServer(t)
 
-	status, _ := post(t, server, authzapi.PathAssignRole, authzapi.RoleRequest{Subject: alice, Role: "author"})
+	status, _ := post(
+		t,
+		server,
+		authzapi.PathAssignRole,
+		authzapi.RoleRequest{Subject: alice, Role: "author"},
+	)
 	require.Equal(t, http.StatusOK, status)
 
 	status, body := post(t, server, authzapi.PathCan, authzapi.CanRequest{
@@ -94,7 +100,12 @@ func TestCan(t *testing.T) {
 func TestAssignRoleRejectsAnUnknownRole(t *testing.T) {
 	server := newServer(t)
 
-	status, body := post(t, server, authzapi.PathAssignRole, authzapi.RoleRequest{Subject: alice, Role: "wizard"})
+	status, body := post(
+		t,
+		server,
+		authzapi.PathAssignRole,
+		authzapi.RoleRequest{Subject: alice, Role: "wizard"},
+	)
 	assert.Equal(t, http.StatusBadRequest, status)
 
 	var envelope httpx.Envelope
@@ -137,7 +148,12 @@ func TestGrantAndPurgeRoundTrip(t *testing.T) {
 	require.NoError(t, json.Unmarshal(body, &allowed))
 	require.True(t, allowed.Allowed)
 
-	status, _ = post(t, server, authzapi.PathPurgeResource, authzapi.ResourceRequest{Resource: resource})
+	status, _ = post(
+		t,
+		server,
+		authzapi.PathPurgeResource,
+		authzapi.ResourceRequest{Resource: resource},
+	)
 	require.Equal(t, http.StatusOK, status)
 
 	status, body = post(t, server, authzapi.PathCan, authzapi.CanRequest{
@@ -153,7 +169,8 @@ func TestGrantAndPurgeRoundTrip(t *testing.T) {
 func TestUnreadableBodyIsTheCallersFault(t *testing.T) {
 	server := newServer(t)
 
-	response, err := server.Client().Post(server.URL+authzapi.PathCan, "application/json", bytes.NewReader([]byte("{not json")))
+	response, err := server.Client().
+		Post(server.URL+authzapi.PathCan, "application/json", bytes.NewReader([]byte("{not json")))
 	require.NoError(t, err)
 	defer func() { _ = response.Body.Close() }()
 

@@ -22,7 +22,10 @@ const (
 func newService(t *testing.T) *authz.Service {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", "file:"+t.Name()+"?mode=memory&cache=shared&_pragma=foreign_keys(ON)")
+	db, err := sql.Open(
+		"sqlite",
+		"file:"+t.Name()+"?mode=memory&cache=shared&_pragma=foreign_keys(ON)",
+	)
 	require.NoError(t, err)
 
 	db.SetMaxOpenConns(1)
@@ -103,7 +106,10 @@ func TestGrantAppliesToExactlyOneResource(t *testing.T) {
 	service := newService(t)
 	ctx := t.Context()
 
-	require.NoError(t, service.Grant(ctx, authorRef, []string{"post.update", "post.delete"}, postRef))
+	require.NoError(
+		t,
+		service.Grant(ctx, authorRef, []string{"post.update", "post.delete"}, postRef),
+	)
 
 	for _, action := range []string{"post.update", "post.delete"} {
 		allowed, err := service.Can(ctx, authorRef, action, postRef)

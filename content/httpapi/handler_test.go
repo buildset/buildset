@@ -34,7 +34,10 @@ func newServer(t *testing.T) *httptest.Server {
 	repository, err := sqlite.NewRepository(t.Context(), db)
 	require.NoError(t, err)
 
-	handler, err := httpapi.NewHandler(content.NewService(repository), slog.New(slog.DiscardHandler))
+	handler, err := httpapi.NewHandler(
+		content.NewService(repository),
+		slog.New(slog.DiscardHandler),
+	)
 	require.NoError(t, err)
 
 	mux := http.NewServeMux()
@@ -52,7 +55,8 @@ func post(t *testing.T, server *httptest.Server, path string, request any) (int,
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	response, err := server.Client().Post(server.URL+path, "application/json", bytes.NewReader(body))
+	response, err := server.Client().
+		Post(server.URL+path, "application/json", bytes.NewReader(body))
 	require.NoError(t, err)
 	defer func() { _ = response.Body.Close() }()
 
@@ -170,7 +174,12 @@ func TestDeletePostAnswersWithAnEmptyObject(t *testing.T) {
 
 	created := createPost(t, server, "Doomed")
 
-	status, body := post(t, server, contentapi.PathDeletePost, contentapi.DeletePostRequest{ID: created.ID})
+	status, body := post(
+		t,
+		server,
+		contentapi.PathDeletePost,
+		contentapi.DeletePostRequest{ID: created.ID},
+	)
 	require.Equal(t, http.StatusOK, status)
 	assert.JSONEq(t, `{}`, string(body))
 

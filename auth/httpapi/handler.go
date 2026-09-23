@@ -154,7 +154,13 @@ func (h *Handler) userID(w http.ResponseWriter, userRef string) (string, bool) {
 	return parsed.ID, true
 }
 
-func (h *Handler) user(w http.ResponseWriter, r *http.Request, operation string, user *auth.User, err error) {
+func (h *Handler) user(
+	w http.ResponseWriter,
+	r *http.Request,
+	operation string,
+	user *auth.User,
+	err error,
+) {
 	if err != nil {
 		h.fail(w, r, operation, err)
 

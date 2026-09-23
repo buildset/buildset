@@ -63,7 +63,10 @@ func Run(t *testing.T, newRepository New) {
 		repository := newRepository(t)
 
 		require.NoError(t, repository.InsertSubjectRole(context.Background(), alice, "admin", now))
-		require.NoError(t, repository.InsertSubjectRole(context.Background(), alice, "admin", now.Add(time.Hour)))
+		require.NoError(
+			t,
+			repository.InsertSubjectRole(context.Background(), alice, "admin", now.Add(time.Hour)),
+		)
 
 		roles, err := repository.SubjectRoles(context.Background(), alice)
 		require.NoError(t, err)
@@ -94,7 +97,16 @@ func Run(t *testing.T, newRepository New) {
 		repository := newRepository(t)
 
 		require.NoError(t, repository.InsertSubjectRole(context.Background(), alice, "author", now))
-		require.NoError(t, repository.InsertGrants(context.Background(), alice, []string{"post.update", "post.delete"}, post, now))
+		require.NoError(
+			t,
+			repository.InsertGrants(
+				context.Background(),
+				alice,
+				[]string{"post.update", "post.delete"},
+				post,
+				now,
+			),
+		)
 
 		patterns, err := repository.SubjectPatterns(context.Background(), alice)
 		require.NoError(t, err)
@@ -117,8 +129,26 @@ func Run(t *testing.T, newRepository New) {
 	t.Run("InsertGrants is idempotent", func(t *testing.T) {
 		repository := newRepository(t)
 
-		require.NoError(t, repository.InsertGrants(context.Background(), alice, []string{"post.update"}, post, now))
-		require.NoError(t, repository.InsertGrants(context.Background(), alice, []string{"post.update"}, post, now.Add(time.Hour)))
+		require.NoError(
+			t,
+			repository.InsertGrants(
+				context.Background(),
+				alice,
+				[]string{"post.update"},
+				post,
+				now,
+			),
+		)
+		require.NoError(
+			t,
+			repository.InsertGrants(
+				context.Background(),
+				alice,
+				[]string{"post.update"},
+				post,
+				now.Add(time.Hour),
+			),
+		)
 
 		patterns, err := repository.SubjectPatterns(context.Background(), alice)
 		require.NoError(t, err)
@@ -139,7 +169,16 @@ func Run(t *testing.T, newRepository New) {
 		repository := newRepository(t)
 
 		require.NoError(t, repository.InsertSubjectRole(context.Background(), alice, "author", now))
-		require.NoError(t, repository.InsertGrants(context.Background(), alice, []string{"post.update"}, post, now))
+		require.NoError(
+			t,
+			repository.InsertGrants(
+				context.Background(),
+				alice,
+				[]string{"post.update"},
+				post,
+				now,
+			),
+		)
 
 		require.NoError(t, repository.DeleteBySubject(context.Background(), alice))
 
@@ -156,7 +195,16 @@ func Run(t *testing.T, newRepository New) {
 		repository := newRepository(t)
 
 		require.NoError(t, repository.InsertSubjectRole(context.Background(), alice, "author", now))
-		require.NoError(t, repository.InsertGrants(context.Background(), alice, []string{"post.update"}, post, now))
+		require.NoError(
+			t,
+			repository.InsertGrants(
+				context.Background(),
+				alice,
+				[]string{"post.update"},
+				post,
+				now,
+			),
+		)
 
 		require.NoError(t, repository.DeleteByResource(context.Background(), post))
 
@@ -166,14 +214,21 @@ func Run(t *testing.T, newRepository New) {
 
 		patterns, err := repository.SubjectPatterns(context.Background(), alice)
 		require.NoError(t, err)
-		assert.Equal(t, []authz.Pattern{{Action: "post.create", Resource: "urn:content:post:*"}}, patterns)
+		assert.Equal(
+			t,
+			[]authz.Pattern{{Action: "post.create", Resource: "urn:content:post:*"}},
+			patterns,
+		)
 	})
 
 	t.Run("deleting an absent subject or resource is quiet", func(t *testing.T) {
 		repository := newRepository(t)
 
 		require.NoError(t, repository.DeleteBySubject(context.Background(), "urn:auth:user:nobody"))
-		require.NoError(t, repository.DeleteByResource(context.Background(), "urn:content:post:nothing"))
+		require.NoError(
+			t,
+			repository.DeleteByResource(context.Background(), "urn:content:post:nothing"),
+		)
 		require.NoError(t, repository.DeleteSubjectRole(context.Background(), alice, "admin"))
 	})
 }

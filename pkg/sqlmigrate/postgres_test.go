@@ -27,7 +27,9 @@ var postgresFiles = fstest.MapFS{
 		"CREATE TABLE gadgets (id text NOT NULL PRIMARY KEY);\n" +
 			"CREATE INDEX gadgets_id_idx ON gadgets (id);\n" +
 			"INSERT INTO gadgets (id) VALUES ('first');")},
-	"migrations/0002_widgets.sql": {Data: []byte(`CREATE TABLE widgets (id text NOT NULL PRIMARY KEY);`)},
+	"migrations/0002_widgets.sql": {
+		Data: []byte(`CREATE TABLE widgets (id text NOT NULL PRIMARY KEY);`),
+	},
 }
 
 func TestPostgresUp(t *testing.T) {
@@ -63,7 +65,9 @@ func TestPostgresUpRejectsAnEditedMigration(t *testing.T) {
 	require.NoError(t, newPostgresRunner(postgresFiles).Up(ctx, db))
 
 	edited := fstest.MapFS{
-		"migrations/0001_gadgets.sql": {Data: []byte(`CREATE TABLE gadgets (id text NOT NULL PRIMARY KEY, extra text);`)},
+		"migrations/0001_gadgets.sql": {
+			Data: []byte(`CREATE TABLE gadgets (id text NOT NULL PRIMARY KEY, extra text);`),
+		},
 		"migrations/0002_widgets.sql": postgresFiles["migrations/0002_widgets.sql"],
 	}
 
@@ -78,7 +82,9 @@ func TestPostgresUpRefusesANewerSchema(t *testing.T) {
 	require.NoError(t, newPostgresRunner(postgresFiles).Up(ctx, db))
 
 	// A binary that knows only 0001 must not start against a database already carrying 0002.
-	older := fstest.MapFS{"migrations/0001_gadgets.sql": postgresFiles["migrations/0001_gadgets.sql"]}
+	older := fstest.MapFS{
+		"migrations/0001_gadgets.sql": postgresFiles["migrations/0001_gadgets.sql"],
+	}
 
 	err := newPostgresRunner(older).Up(ctx, db)
 	require.ErrorIs(t, err, sqlmigrate.ErrMissingFile)

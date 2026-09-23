@@ -56,13 +56,19 @@ func (a directAuth) ListUsers(ctx context.Context, limit int) ([]web.User, error
 	return converted, nil
 }
 
-func (a directAuth) UpdateProfile(ctx context.Context, userRef, username, name string) (*web.User, error) {
+func (a directAuth) UpdateProfile(
+	ctx context.Context,
+	userRef, username, name string,
+) (*web.User, error) {
 	parsed, err := ref.Parse(userRef)
 	if err != nil {
 		return nil, web.NewError(web.ErrNotFound, "That account could not be found.")
 	}
 
-	user, err := a.service.UpdateProfile(ctx, auth.UpdateProfileRequest{UserID: parsed.ID, Username: username, Name: name})
+	user, err := a.service.UpdateProfile(
+		ctx,
+		auth.UpdateProfileRequest{UserID: parsed.ID, Username: username, Name: name},
+	)
 	if err != nil {
 		return nil, translateAuthError(err)
 	}
@@ -98,7 +104,12 @@ func (a directAuthz) Can(ctx context.Context, subject, action, resource string) 
 	return allowed, translateAuthzError(err)
 }
 
-func (a directAuthz) Grant(ctx context.Context, subject string, actions []string, resource string) error {
+func (a directAuthz) Grant(
+	ctx context.Context,
+	subject string,
+	actions []string,
+	resource string,
+) error {
 	return translateAuthzError(a.service.Grant(ctx, subject, actions, resource))
 }
 
@@ -151,7 +162,11 @@ func (a directContent) GetPost(ctx context.Context, id string) (*web.Post, error
 	return toWebPost(post), nil
 }
 
-func (a directContent) ListPosts(ctx context.Context, status, authorRef string, limit int) ([]web.Post, error) {
+func (a directContent) ListPosts(
+	ctx context.Context,
+	status, authorRef string,
+	limit int,
+) ([]web.Post, error) {
 	posts, err := a.service.ListPosts(ctx, content.PostFilter{
 		Status:    content.Status(status),
 		AuthorRef: authorRef,
@@ -169,7 +184,10 @@ func (a directContent) ListPosts(ctx context.Context, status, authorRef string, 
 	return converted, nil
 }
 
-func (a directContent) CreatePost(ctx context.Context, authorRef, title, body, contentType string) (*web.Post, error) {
+func (a directContent) CreatePost(
+	ctx context.Context,
+	authorRef, title, body, contentType string,
+) (*web.Post, error) {
 	post, err := a.service.CreatePost(ctx, content.CreatePostRequest{
 		AuthorRef:   authorRef,
 		Title:       title,
@@ -183,7 +201,10 @@ func (a directContent) CreatePost(ctx context.Context, authorRef, title, body, c
 	return toWebPost(post), nil
 }
 
-func (a directContent) UpdatePost(ctx context.Context, id, title, body, contentType string) (*web.Post, error) {
+func (a directContent) UpdatePost(
+	ctx context.Context,
+	id, title, body, contentType string,
+) (*web.Post, error) {
 	post, err := a.service.UpdatePost(ctx, id, content.UpdatePostRequest{
 		Title:       title,
 		Body:        body,

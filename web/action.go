@@ -23,7 +23,12 @@ const (
 
 // ownershipActions are granted to whoever creates a post, so ownership stays a matter of grants
 // rather than an author comparison in a handler.
-var ownershipActions = []string{ActionPostRead, ActionPostUpdate, ActionPostDelete, ActionPostPublish}
+var ownershipActions = []string{
+	ActionPostRead,
+	ActionPostUpdate,
+	ActionPostDelete,
+	ActionPostPublish,
+}
 
 // administratorRole is the role this site refuses to let someone remove from themselves.
 const administratorRole = "admin"

@@ -96,7 +96,11 @@ func (c *Config) Validate() error {
 	}
 
 	if c.HTTPTimeout <= 0 {
-		return fmt.Errorf("%w: HTTP_TIMEOUT must be positive, got %s", errInvalidConfig, c.HTTPTimeout)
+		return fmt.Errorf(
+			"%w: HTTP_TIMEOUT must be positive, got %s",
+			errInvalidConfig,
+			c.HTTPTimeout,
+		)
 	}
 
 	return nil

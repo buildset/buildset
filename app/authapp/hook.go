@@ -22,7 +22,11 @@ const (
 
 // firstUserHook makes the first account an administrator. The call crosses the network here, so
 // setup depends on the authorization service being up, which is why compose starts it first.
-func firstUserHook(client *authzclient.Client, role string, logger *slog.Logger) auth.FirstUserHook {
+func firstUserHook(
+	client *authzclient.Client,
+	role string,
+	logger *slog.Logger,
+) auth.FirstUserHook {
 	return auth.FirstUserHookFunc(func(ctx context.Context, userRef string) error {
 		var err error
 

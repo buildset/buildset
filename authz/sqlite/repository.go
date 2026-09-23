@@ -51,7 +51,8 @@ func builder() squirrel.StatementBuilderType {
 func isForeignKeyViolation(err error) bool {
 	var sqliteError *sqlitedriver.Error
 
-	return errors.As(err, &sqliteError) && sqliteError.Code() == sqlite3.SQLITE_CONSTRAINT_FOREIGNKEY
+	return errors.As(err, &sqliteError) &&
+		sqliteError.Code() == sqlite3.SQLITE_CONSTRAINT_FOREIGNKEY
 }
 
 func formatTime(t time.Time) string {

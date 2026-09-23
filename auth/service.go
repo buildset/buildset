@@ -37,7 +37,13 @@ type Service struct {
 	dummyHash string
 }
 
-func NewService(repository Repository, passwords *hash.Registry, firstUserHook FirstUserHook, sessionTTL time.Duration, logger *slog.Logger) (*Service, error) {
+func NewService(
+	repository Repository,
+	passwords *hash.Registry,
+	firstUserHook FirstUserHook,
+	sessionTTL time.Duration,
+	logger *slog.Logger,
+) (*Service, error) {
 	if sessionTTL <= 0 {
 		return nil, fmt.Errorf("%w: got %s", errInvalidSessionTTL, sessionTTL)
 	}
@@ -149,7 +155,12 @@ func (s *Service) rehashIfNeeded(ctx context.Context, user *User, password strin
 
 	passwordHash, err := s.passwords.Hash(password)
 	if err != nil {
-		s.logger.WarnContext(ctx, "rehash password", slog.String("user_id", user.ID), slog.Any("error", err))
+		s.logger.WarnContext(
+			ctx,
+			"rehash password",
+			slog.String("user_id", user.ID),
+			slog.Any("error", err),
+		)
 
 		return
 	}
@@ -158,13 +169,22 @@ func (s *Service) rehashIfNeeded(ctx context.Context, user *User, password strin
 	user.UpdatedAt = currentTime()
 
 	if err := s.repository.UpdateUser(ctx, user); err != nil {
-		s.logger.WarnContext(ctx, "store rehashed password", slog.String("user_id", user.ID), slog.Any("error", err))
+		s.logger.WarnContext(
+			ctx,
+			"store rehashed password",
+			slog.String("user_id", user.ID),
+			slog.Any("error", err),
+		)
 	}
 }
 
 // CreateSession issues a new token. It is called on every login, so there is no existing session
 // identifier an attacker could have fixed beforehand.
-func (s *Service) CreateSession(ctx context.Context, userID string, meta SessionMeta) (string, *Session, error) {
+func (s *Service) CreateSession(
+	ctx context.Context,
+	userID string,
+	meta SessionMeta,
+) (string, *Session, error) {
 	token := newSessionToken()
 	now := currentTime()
 
@@ -200,7 +220,12 @@ func (s *Service) ResolveSession(ctx context.Context, token string) (*Session, *
 
 	if session.Expired(now) {
 		if err := s.repository.DeleteSessionByTokenHash(ctx, tokenHash); err != nil {
-			s.logger.WarnContext(ctx, "delete expired session", slog.String("session_id", session.ID), slog.Any("error", err))
+			s.logger.WarnContext(
+				ctx,
+				"delete expired session",
+				slog.String("session_id", session.ID),
+				slog.Any("error", err),
+			)
 		}
 
 		return nil, nil, ErrSessionNotFound
@@ -213,7 +238,12 @@ func (s *Service) ResolveSession(ctx context.Context, token string) (*Session, *
 
 	if now.Sub(session.LastSeen) >= touchInterval {
 		if err := s.repository.TouchSession(ctx, session.ID, now); err != nil {
-			s.logger.WarnContext(ctx, "touch session", slog.String("session_id", session.ID), slog.Any("error", err))
+			s.logger.WarnContext(
+				ctx,
+				"touch session",
+				slog.String("session_id", session.ID),
+				slog.Any("error", err),
+			)
 		}
 	}
 
@@ -394,7 +424,12 @@ func (s *Service) CompleteSetup(ctx context.Context, req RegisterRequest) (*User
 // no administrator role for an operator to clean up by hand.
 func (s *Service) rollbackSetup(ctx context.Context, user *User) {
 	if err := s.repository.DeleteUser(ctx, user.ID); err != nil {
-		s.logger.ErrorContext(ctx, "roll back setup user", slog.String("user_id", user.ID), slog.Any("error", err))
+		s.logger.ErrorContext(
+			ctx,
+			"roll back setup user",
+			slog.String("user_id", user.ID),
+			slog.Any("error", err),
+		)
 	}
 }
 

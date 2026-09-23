@@ -102,7 +102,10 @@ func (r *Repository) GetPost(ctx context.Context, id string) (*content.Post, err
 	return scanPost(row, fmt.Errorf("%w: %s", content.ErrPostNotFound, id))
 }
 
-func (r *Repository) ListPosts(ctx context.Context, filter content.PostFilter) ([]content.Post, error) {
+func (r *Repository) ListPosts(
+	ctx context.Context,
+	filter content.PostFilter,
+) ([]content.Post, error) {
 	query := r.builder().
 		Select(postColumns()...).
 		From(tablePosts)

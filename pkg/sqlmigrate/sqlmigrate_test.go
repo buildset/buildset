@@ -24,7 +24,11 @@ func newDatabase(t *testing.T) *sql.DB {
 }
 
 func newRunner(files fstest.MapFS) sqlmigrate.Runner {
-	return sqlmigrate.Runner{FileSystem: files, Directory: "migrations", TableName: "test_schema_migrations"}
+	return sqlmigrate.Runner{
+		FileSystem: files,
+		Directory:  "migrations",
+		TableName:  "test_schema_migrations",
+	}
 }
 
 func TestUp(t *testing.T) {
@@ -32,8 +36,14 @@ func TestUp(t *testing.T) {
 	db := newDatabase(t)
 
 	files := fstest.MapFS{
-		"migrations/0002_widgets.sql": {Data: []byte(`CREATE TABLE widgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`)},
-		"migrations/0001_gadgets.sql": {Data: []byte("CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;\nINSERT INTO gadgets (id) VALUES ('first');")},
+		"migrations/0002_widgets.sql": {
+			Data: []byte(`CREATE TABLE widgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`),
+		},
+		"migrations/0001_gadgets.sql": {
+			Data: []byte(
+				"CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;\nINSERT INTO gadgets (id) VALUES ('first');",
+			),
+		},
 	}
 
 	require.NoError(t, newRunner(files).Up(ctx, db))
@@ -63,11 +73,15 @@ func TestUpRejectsChangedFile(t *testing.T) {
 	db := newDatabase(t)
 
 	files := fstest.MapFS{
-		"migrations/0001_gadgets.sql": {Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`)},
+		"migrations/0001_gadgets.sql": {
+			Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`),
+		},
 	}
 	require.NoError(t, newRunner(files).Up(ctx, db))
 
-	files["migrations/0001_gadgets.sql"] = &fstest.MapFile{Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY, extra TEXT) STRICT;`)}
+	files["migrations/0001_gadgets.sql"] = &fstest.MapFile{
+		Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY, extra TEXT) STRICT;`),
+	}
 
 	require.ErrorIs(t, newRunner(files).Up(ctx, db), sqlmigrate.ErrChecksumMismatch)
 }
@@ -77,12 +91,16 @@ func TestUpRejectsMissingFile(t *testing.T) {
 	db := newDatabase(t)
 
 	files := fstest.MapFS{
-		"migrations/0001_gadgets.sql": {Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`)},
+		"migrations/0001_gadgets.sql": {
+			Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`),
+		},
 	}
 	require.NoError(t, newRunner(files).Up(ctx, db))
 
 	delete(files, "migrations/0001_gadgets.sql")
-	files["migrations/0002_widgets.sql"] = &fstest.MapFile{Data: []byte(`CREATE TABLE widgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`)}
+	files["migrations/0002_widgets.sql"] = &fstest.MapFile{
+		Data: []byte(`CREATE TABLE widgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`),
+	}
 
 	require.ErrorIs(t, newRunner(files).Up(ctx, db), sqlmigrate.ErrMissingFile)
 }
@@ -92,8 +110,10 @@ func TestUpLeavesNoRecordForFailedMigration(t *testing.T) {
 	db := newDatabase(t)
 
 	files := fstest.MapFS{
-		"migrations/0001_gadgets.sql": {Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`)},
-		"migrations/0002_broken.sql":  {Data: []byte(`THIS IS NOT SQL;`)},
+		"migrations/0001_gadgets.sql": {
+			Data: []byte(`CREATE TABLE gadgets (id TEXT NOT NULL PRIMARY KEY) STRICT;`),
+		},
+		"migrations/0002_broken.sql": {Data: []byte(`THIS IS NOT SQL;`)},
 	}
 
 	require.Error(t, newRunner(files).Up(ctx, db))

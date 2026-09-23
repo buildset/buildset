@@ -44,7 +44,13 @@ func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Application, e
 		return nil, fmt.Errorf("build http handler: %w", err)
 	}
 
-	return &Application{config: cfg, logger: logger, stores: stores, services: svc, routes: routes}, nil
+	return &Application{
+		config:   cfg,
+		logger:   logger,
+		stores:   stores,
+		services: svc,
+		routes:   routes,
+	}, nil
 }
 
 // Handler wraps the routes with health probes and middleware.

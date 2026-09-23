@@ -79,7 +79,13 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 		ContentType: contentTypePlainText,
 	}
 
-	post, err := s.deps.Content.CreatePost(r.Context(), user.Ref, submitted.Title, submitted.Body, submitted.ContentType)
+	post, err := s.deps.Content.CreatePost(
+		r.Context(),
+		user.Ref,
+		submitted.Title,
+		submitted.Body,
+		submitted.ContentType,
+	)
 	if err != nil {
 		s.renderPostFormError(w, r, err, "New post", submitted, false)
 
@@ -96,8 +102,12 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request) {
 			slog.Any("error", err),
 		)
 
-		s.renderError(w, r, http.StatusInternalServerError,
-			"The post was saved, but its permissions were not set. Open it from the post list and try again.")
+		s.renderError(
+			w,
+			r,
+			http.StatusInternalServerError,
+			"The post was saved, but its permissions were not set. Open it from the post list and try again.",
+		)
 
 		return
 	}
@@ -135,7 +145,13 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request) {
 	submitted.Title = r.PostFormValue("title")
 	submitted.Body = r.PostFormValue("body")
 
-	if _, err := s.deps.Content.UpdatePost(r.Context(), post.ID, submitted.Title, submitted.Body, contentTypePlainText); err != nil {
+	if _, err := s.deps.Content.UpdatePost(
+		r.Context(),
+		post.ID,
+		submitted.Title,
+		submitted.Body,
+		contentTypePlainText,
+	); err != nil {
 		s.renderPostFormError(w, r, err, "Edit post", submitted, true)
 
 		return
@@ -154,7 +170,11 @@ func (s *Server) setPostStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := s.deps.Content.SetStatus(r.Context(), post.ID, r.PostFormValue("status")); err != nil {
+	if _, err := s.deps.Content.SetStatus(
+		r.Context(),
+		post.ID,
+		r.PostFormValue("status"),
+	); err != nil {
 		if !errors.Is(err, ErrInvalidInput) {
 			s.renderInternalError(w, r, err, "set post status")
 
@@ -163,7 +183,11 @@ func (s *Server) setPostStatus(w http.ResponseWriter, r *http.Request) {
 
 		data := s.newLayoutData(r, "Edit post")
 		data.ErrorMessage = err.Error()
-		data.Content = postFormContent{Post: *post, Editing: true, Statuses: nextStatuses(post.Status)}
+		data.Content = postFormContent{
+			Post:     *post,
+			Editing:  true,
+			Statuses: nextStatuses(post.Status),
+		}
 
 		s.render(w, r, http.StatusBadRequest, "admin_post_form.gohtml", data)
 
@@ -198,7 +222,11 @@ func (s *Server) deletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 // A post that does not exist and one the visitor may not touch answer the same way.
-func (s *Server) authorizePost(w http.ResponseWriter, r *http.Request, action string) (*Post, bool) {
+func (s *Server) authorizePost(
+	w http.ResponseWriter,
+	r *http.Request,
+	action string,
+) (*Post, bool) {
 	id := r.PathValue("id")
 
 	resource, err := postResource(id)
@@ -228,7 +256,14 @@ func (s *Server) authorizePost(w http.ResponseWriter, r *http.Request, action st
 	return post, true
 }
 
-func (s *Server) renderPostFormError(w http.ResponseWriter, r *http.Request, err error, title string, post Post, editing bool) {
+func (s *Server) renderPostFormError(
+	w http.ResponseWriter,
+	r *http.Request,
+	err error,
+	title string,
+	post Post,
+	editing bool,
+) {
 	if !errors.Is(err, ErrInvalidInput) {
 		s.renderInternalError(w, r, err, "save post")
 
@@ -237,7 +272,11 @@ func (s *Server) renderPostFormError(w http.ResponseWriter, r *http.Request, err
 
 	data := s.newLayoutData(r, title)
 	data.ErrorMessage = err.Error()
-	data.Content = postFormContent{Post: post, Editing: editing, Statuses: nextStatuses(post.Status)}
+	data.Content = postFormContent{
+		Post:     post,
+		Editing:  editing,
+		Statuses: nextStatuses(post.Status),
+	}
 
 	s.render(w, r, http.StatusBadRequest, "admin_post_form.gohtml", data)
 }

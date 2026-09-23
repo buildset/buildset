@@ -27,7 +27,10 @@ func firstRunToPublishedPost(t *testing.T, h *harness) {
 	click(t, admin, "Create administrator")
 
 	// The first account is an administrator, which is the only reason this link is here.
-	require.NoError(t, admin.GetByRole("link", playwright.PageGetByRoleOptions{Name: "Admin"}).WaitFor())
+	require.NoError(
+		t,
+		admin.GetByRole("link", playwright.PageGetByRoleOptions{Name: "Admin"}).WaitFor(),
+	)
 
 	h.open(t, admin, "/admin/posts/new")
 	fill(t, admin, "Title", "On Computing")
@@ -47,7 +50,10 @@ func firstRunToPublishedPost(t *testing.T, h *harness) {
 
 	// Now the stranger can read it, without signing in.
 	h.open(t, stranger, "/")
-	require.NoError(t, stranger.GetByRole("link", playwright.PageGetByRoleOptions{Name: "On Computing"}).Click())
+	require.NoError(
+		t,
+		stranger.GetByRole("link", playwright.PageGetByRoleOptions{Name: "On Computing"}).Click(),
+	)
 
 	body, err := stranger.Locator("article").TextContent()
 	require.NoError(t, err)

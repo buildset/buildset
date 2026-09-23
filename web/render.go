@@ -49,7 +49,9 @@ func parseTemplates() (map[string]*template.Template, error) {
 	pages := make(map[string]*template.Template, len(pageNames))
 
 	for _, name := range pageNames {
-		page, err := template.New(name).Funcs(templateFunctions).ParseFS(templateFiles, "templates/layout.gohtml", "templates/"+name)
+		page, err := template.New(name).
+			Funcs(templateFunctions).
+			ParseFS(templateFiles, "templates/layout.gohtml", "templates/"+name)
 		if err != nil {
 			return nil, fmt.Errorf("parse template %s: %w", name, err)
 		}
@@ -88,7 +90,13 @@ func (s *Server) newLayoutData(r *http.Request, title string) layoutData {
 
 // The template runs into a buffer first, so a failure becomes an error page rather than a truncated
 // one already sent with a success status.
-func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page string, data layoutData) {
+func (s *Server) render(
+	w http.ResponseWriter,
+	r *http.Request,
+	status int,
+	page string,
+	data layoutData,
+) {
 	tmpl, ok := s.templates[page]
 	if !ok {
 		s.logger.ErrorContext(r.Context(), "unknown template", slog.String("page", page))
@@ -100,7 +108,12 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page
 	var buf bytes.Buffer
 
 	if err := tmpl.ExecuteTemplate(&buf, "layout.gohtml", data); err != nil {
-		s.logger.ErrorContext(r.Context(), "execute template", slog.String("page", page), slog.Any("error", err))
+		s.logger.ErrorContext(
+			r.Context(),
+			"execute template",
+			slog.String("page", page),
+			slog.Any("error", err),
+		)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 
 		return
@@ -119,7 +132,12 @@ func (s *Server) renderError(w http.ResponseWriter, r *http.Request, status int,
 }
 
 // renderInternalError puts the cause in the log and keeps it out of the response.
-func (s *Server) renderInternalError(w http.ResponseWriter, r *http.Request, err error, message string) {
+func (s *Server) renderInternalError(
+	w http.ResponseWriter,
+	r *http.Request,
+	err error,
+	message string,
+) {
 	s.logger.ErrorContext(r.Context(), message, slog.Any("error", err))
 	s.renderError(w, r, http.StatusInternalServerError, "Something went wrong. Please try again.")
 }

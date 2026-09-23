@@ -62,7 +62,10 @@ func (h *Handler) passwordSubmit(w http.ResponseWriter, r *http.Request) {
 
 // requireSession sends an unauthenticated visitor to the login page and reports whether the caller
 // should stop.
-func (h *Handler) requireSession(w http.ResponseWriter, r *http.Request) (*auth.Session, *auth.User, bool) {
+func (h *Handler) requireSession(
+	w http.ResponseWriter,
+	r *http.Request,
+) (*auth.Session, *auth.User, bool) {
 	session, user, err := h.currentSession(r)
 	if err == nil {
 		return session, user, true
@@ -78,7 +81,12 @@ func (h *Handler) requireSession(w http.ResponseWriter, r *http.Request) (*auth.
 
 	if r.Method != http.MethodGet {
 		// Redirecting a POST would throw away what the visitor typed, so say so instead.
-		h.renderError(w, r, http.StatusUnauthorized, "Your session has expired. Sign in again and retry.")
+		h.renderError(
+			w,
+			r,
+			http.StatusUnauthorized,
+			"Your session has expired. Sign in again and retry.",
+		)
 
 		return nil, nil, false
 	}

@@ -116,7 +116,8 @@ func (s *Server) setUserRoles(w http.ResponseWriter, r *http.Request) {
 
 	// Removing your own last administrator role would lock the site's only administrator out, and
 	// nothing else could grant it back.
-	if subject.Ref == viewer.Ref && !slices.Contains(requested, administratorRole) && slices.Contains(held, administratorRole) {
+	if subject.Ref == viewer.Ref && !slices.Contains(requested, administratorRole) &&
+		slices.Contains(held, administratorRole) {
 		content, buildErr := s.buildUserContent(r, viewer, subject)
 		if buildErr != nil {
 			s.renderInternalError(w, r, buildErr, "build user page")
@@ -154,7 +155,11 @@ func (s *Server) setUserRoles(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorizeUser loads the user named in the path and checks one permission over them.
-func (s *Server) authorizeUser(w http.ResponseWriter, r *http.Request, action string) (*User, *User, bool) {
+func (s *Server) authorizeUser(
+	w http.ResponseWriter,
+	r *http.Request,
+	action string,
+) (*User, *User, bool) {
 	id := r.PathValue("id")
 
 	resource, err := userResource(id)
@@ -185,7 +190,10 @@ func (s *Server) authorizeUser(w http.ResponseWriter, r *http.Request, action st
 	return viewer, subject, true
 }
 
-func (s *Server) buildUserContent(r *http.Request, viewer, subject *User) (adminUserContent, error) {
+func (s *Server) buildUserContent(
+	r *http.Request,
+	viewer, subject *User,
+) (adminUserContent, error) {
 	available, err := s.deps.Authz.ListRoles(r.Context())
 	if err != nil {
 		return adminUserContent{}, err

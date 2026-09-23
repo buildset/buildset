@@ -96,7 +96,11 @@ func (r *Repository) SubjectRoles(ctx context.Context, subject string) ([]string
 }
 
 // InsertSubjectRole is idempotent, so assigning a role twice is not an error.
-func (r *Repository) InsertSubjectRole(ctx context.Context, subject, role string, grantedAt time.Time) error {
+func (r *Repository) InsertSubjectRole(
+	ctx context.Context,
+	subject, role string,
+	grantedAt time.Time,
+) error {
 	_, err := builder().RunWith(r.db).
 		Insert(tableSubjectRoles).
 		Columns(subjectRoleColumns()...).

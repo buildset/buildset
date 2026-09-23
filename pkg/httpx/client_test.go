@@ -28,7 +28,11 @@ func newClient(t *testing.T, handler http.HandlerFunc) *httpx.Client {
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
-	client, err := httpx.NewClient("test", server.URL, httpx.ClientOptions{Timeout: 2 * time.Second})
+	client, err := httpx.NewClient(
+		"test",
+		server.URL,
+		httpx.ClientOptions{Timeout: 2 * time.Second},
+	)
 	require.NoError(t, err)
 
 	return client
@@ -164,14 +168,22 @@ func TestCallOnlyReportsADomainErrorForAWellFormedEnvelope(t *testing.T) {
 
 func TestCallReportsAnUnreachableServiceAsAFailure(t *testing.T) {
 	// A port nothing is listening on stands in for a dependency that is down.
-	client, err := httpx.NewClient("test", "http://127.0.0.1:1", httpx.ClientOptions{Timeout: time.Second})
+	client, err := httpx.NewClient(
+		"test",
+		"http://127.0.0.1:1",
+		httpx.ClientOptions{Timeout: time.Second},
+	)
 	require.NoError(t, err)
 
 	callErr := client.Call(t.Context(), "/v1/echo", echoRequest{}, &echoResponse{})
 	require.Error(t, callErr)
 
 	var domain *httpx.Error
-	assert.False(t, errors.As(callErr, &domain), "an unreachable service must not look like an answer")
+	assert.False(
+		t,
+		errors.As(callErr, &domain),
+		"an unreachable service must not look like an answer",
+	)
 }
 
 func TestCallReportsACancelledContextAsAFailure(t *testing.T) {

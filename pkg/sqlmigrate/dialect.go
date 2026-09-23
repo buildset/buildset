@@ -36,7 +36,10 @@ func (SQLite) CreateTable(table string) string {
 }
 
 func (SQLite) Insert(table string) string {
-	return fmt.Sprintf(`INSERT INTO %s (version, name, checksum, applied_at) VALUES (?, ?, ?, ?)`, table)
+	return fmt.Sprintf(
+		`INSERT INTO %s (version, name, checksum, applied_at) VALUES (?, ?, ?, ?)`,
+		table,
+	)
 }
 
 // appliedAtFormat sorts lexicographically, so a SQLite bookkeeping table ordered on it is ordered
@@ -66,7 +69,10 @@ func (Postgres) CreateTable(table string) string {
 }
 
 func (Postgres) Insert(table string) string {
-	return fmt.Sprintf(`INSERT INTO %s (version, name, checksum, applied_at) VALUES ($1, $2, $3, $4)`, table)
+	return fmt.Sprintf(
+		`INSERT INTO %s (version, name, checksum, applied_at) VALUES ($1, $2, $3, $4)`,
+		table,
+	)
 }
 
 func (Postgres) AppliedAt(t time.Time) any {
@@ -74,7 +80,11 @@ func (Postgres) AppliedAt(t time.Time) any {
 }
 
 func (Postgres) Lock(ctx context.Context, conn *sql.Conn, table string) error {
-	if _, err := conn.ExecContext(ctx, `SELECT pg_advisory_lock($1)`, advisoryKey(table)); err != nil {
+	if _, err := conn.ExecContext(
+		ctx,
+		`SELECT pg_advisory_lock($1)`,
+		advisoryKey(table),
+	); err != nil {
 		return fmt.Errorf("acquire advisory lock for %s: %w", table, err)
 	}
 
@@ -82,7 +92,11 @@ func (Postgres) Lock(ctx context.Context, conn *sql.Conn, table string) error {
 }
 
 func (Postgres) Unlock(ctx context.Context, conn *sql.Conn, table string) error {
-	if _, err := conn.ExecContext(ctx, `SELECT pg_advisory_unlock($1)`, advisoryKey(table)); err != nil {
+	if _, err := conn.ExecContext(
+		ctx,
+		`SELECT pg_advisory_unlock($1)`,
+		advisoryKey(table),
+	); err != nil {
 		return fmt.Errorf("release advisory lock for %s: %w", table, err)
 	}
 

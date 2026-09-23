@@ -40,7 +40,11 @@ func startPlaywright() (*playwright.Playwright, error) {
 	}
 
 	if !env.GetBool(installBrowserEnvVar, false) {
-		return nil, fmt.Errorf("%w (set %s=1 to download it, or install it beforehand, see the README)", err, installBrowserEnvVar)
+		return nil, fmt.Errorf(
+			"%w (set %s=1 to download it, or install it beforehand, see the README)",
+			err,
+			installBrowserEnvVar,
+		)
 	}
 
 	var installErr error
@@ -164,5 +168,8 @@ func fill(t *testing.T, page playwright.Page, label, value string) {
 func click(t *testing.T, page playwright.Page, name string) {
 	t.Helper()
 
-	require.NoError(t, page.GetByRole("button", playwright.PageGetByRoleOptions{Name: name}).Click())
+	require.NoError(
+		t,
+		page.GetByRole("button", playwright.PageGetByRoleOptions{Name: name}).Click(),
+	)
 }

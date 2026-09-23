@@ -37,7 +37,12 @@ type Handler struct {
 	logger    *slog.Logger
 }
 
-func NewHandler(service *auth.Service, policy RegistrationPolicy, config Config, logger *slog.Logger) (*Handler, error) {
+func NewHandler(
+	service *auth.Service,
+	policy RegistrationPolicy,
+	config Config,
+	logger *slog.Logger,
+) (*Handler, error) {
 	if config.SessionCookieName == "" {
 		return nil, fmt.Errorf("%w: session cookie name must not be empty", errInvalidConfig)
 	}
@@ -51,7 +56,13 @@ func NewHandler(service *auth.Service, policy RegistrationPolicy, config Config,
 		return nil, err
 	}
 
-	return &Handler{service: service, policy: policy, config: config, templates: templates, logger: logger}, nil
+	return &Handler{
+		service:   service,
+		policy:    policy,
+		config:    config,
+		templates: templates,
+		logger:    logger,
+	}, nil
 }
 
 // Register mounts auth's pages at top-level paths, so moving auth to its own host later is a

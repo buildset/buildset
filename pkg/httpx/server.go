@@ -59,7 +59,13 @@ func WriteError(w http.ResponseWriter, code Code, message string) {
 }
 
 // The cause is logged and not sent, so a client sees a failure it cannot mistake for an answer.
-func WriteInternal(ctx context.Context, w http.ResponseWriter, logger *slog.Logger, operation string, err error) {
+func WriteInternal(
+	ctx context.Context,
+	w http.ResponseWriter,
+	logger *slog.Logger,
+	operation string,
+	err error,
+) {
 	logger.ErrorContext(ctx, operation, slog.Any("error", err))
 
 	http.Error(w, fmt.Sprintf("%s failed", operation), http.StatusInternalServerError)

@@ -29,7 +29,12 @@ type services struct {
 	content *content.Service
 }
 
-func newServices(ctx context.Context, cfg *Config, stores *Stores, logger *slog.Logger) (*services, error) {
+func newServices(
+	ctx context.Context,
+	cfg *Config,
+	stores *Stores,
+	logger *slog.Logger,
+) (*services, error) {
 	bcryptAlgorithm, err := hash.NewBcrypt(cfg.Auth.BcryptCost)
 	if err != nil {
 		return nil, fmt.Errorf("build bcrypt algorithm: %w", err)
@@ -60,12 +65,22 @@ func newServices(ctx context.Context, cfg *Config, stores *Stores, logger *slog.
 			return fmt.Errorf("assign %s role to %s: %w", administratorRole, userRef, err)
 		}
 
-		logger.InfoContext(ctx, "first user is now an administrator", slog.String("user_ref", userRef))
+		logger.InfoContext(
+			ctx,
+			"first user is now an administrator",
+			slog.String("user_ref", userRef),
+		)
 
 		return nil
 	})
 
-	authService, err := auth.NewService(authRepository, passwords, firstUserHook, cfg.Auth.SessionTTL, logger)
+	authService, err := auth.NewService(
+		authRepository,
+		passwords,
+		firstUserHook,
+		cfg.Auth.SessionTTL,
+		logger,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("build auth service: %w", err)
 	}
@@ -100,7 +115,11 @@ func newAuthzRepository(ctx context.Context, driver string, db *sql.DB) (authz.R
 	return authzsqlite.NewRepository(ctx, db)
 }
 
-func newContentRepository(ctx context.Context, driver string, db *sql.DB) (content.Repository, error) {
+func newContentRepository(
+	ctx context.Context,
+	driver string,
+	db *sql.DB,
+) (content.Repository, error) {
 	if driver == DriverPostgres {
 		return contentpostgres.NewRepository(ctx, db)
 	}

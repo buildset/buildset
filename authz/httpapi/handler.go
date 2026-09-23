@@ -65,7 +65,12 @@ func (h *Handler) grant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.void(w, r, "grant", h.service.Grant(r.Context(), request.Subject, request.Actions, request.Resource))
+	h.void(
+		w,
+		r,
+		"grant",
+		h.service.Grant(r.Context(), request.Subject, request.Actions, request.Resource),
+	)
 }
 
 func (h *Handler) assignRole(w http.ResponseWriter, r *http.Request) {

@@ -115,7 +115,11 @@ func TestResolveSessionOnlyReportsNotFoundWhenTheServiceSaidSo(t *testing.T) {
 
 			var webErr *web.Error
 			require.True(t, errors.As(err, &webErr))
-			assert.NotEmpty(t, webErr.Message, "the message shown to a visitor must survive the wire")
+			assert.NotEmpty(
+				t,
+				webErr.Message,
+				"the message shown to a visitor must survive the wire",
+			)
 		})
 	}
 }
@@ -124,7 +128,8 @@ func TestResolveSessionOnAnUnreachableServiceIsNotNotFound(t *testing.T) {
 	client, err := authclient.New("http://127.0.0.1:1", httpx.ClientOptions{Timeout: time.Second})
 	require.NoError(t, err)
 
-	_, resolveErr := remote.NewAuth(client, remote.DefaultURLs()).ResolveSession(t.Context(), "token")
+	_, resolveErr := remote.NewAuth(client, remote.DefaultURLs()).
+		ResolveSession(t.Context(), "token")
 	require.Error(t, resolveErr)
 	assert.False(t, errors.Is(resolveErr, web.ErrNotFound))
 }

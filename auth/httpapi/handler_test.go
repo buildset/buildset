@@ -41,7 +41,13 @@ func newService(t *testing.T) *auth.Service {
 	passwords, err := hash.NewRegistry(algorithm)
 	require.NoError(t, err)
 
-	service, err := auth.NewService(repository, passwords, nil, time.Hour, slog.New(slog.DiscardHandler))
+	service, err := auth.NewService(
+		repository,
+		passwords,
+		nil,
+		time.Hour,
+		slog.New(slog.DiscardHandler),
+	)
 	require.NoError(t, err)
 
 	return service
@@ -68,7 +74,8 @@ func post(t *testing.T, server *httptest.Server, path string, request any) (int,
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	response, err := server.Client().Post(server.URL+path, "application/json", bytes.NewReader(body))
+	response, err := server.Client().
+		Post(server.URL+path, "application/json", bytes.NewReader(body))
 	require.NoError(t, err)
 	defer func() { _ = response.Body.Close() }()
 
@@ -92,7 +99,12 @@ func TestResolveSession(t *testing.T) {
 	token, _, err := service.CreateSession(t.Context(), user.ID, auth.SessionMeta{})
 	require.NoError(t, err)
 
-	status, body := post(t, server, authapi.PathResolveSession, authapi.ResolveSessionRequest{Token: token})
+	status, body := post(
+		t,
+		server,
+		authapi.PathResolveSession,
+		authapi.ResolveSessionRequest{Token: token},
+	)
 	require.Equal(t, http.StatusOK, status)
 
 	var response authapi.UserResponse
@@ -110,7 +122,12 @@ func TestResolveSession(t *testing.T) {
 func TestResolveSessionReportsAnUnknownTokenAsNotFound(t *testing.T) {
 	server := newServer(t, newService(t))
 
-	status, body := post(t, server, authapi.PathResolveSession, authapi.ResolveSessionRequest{Token: "nonsense"})
+	status, body := post(
+		t,
+		server,
+		authapi.PathResolveSession,
+		authapi.ResolveSessionRequest{Token: "nonsense"},
+	)
 	require.Equal(t, http.StatusNotFound, status)
 
 	var envelope httpx.Envelope
@@ -123,10 +140,16 @@ func TestUpdateProfileReportsAConflict(t *testing.T) {
 	service := newService(t)
 	server := newServer(t, service)
 
-	alice, err := service.Register(t.Context(), auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"})
+	alice, err := service.Register(
+		t.Context(),
+		auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"},
+	)
 	require.NoError(t, err)
 
-	bob, err := service.Register(t.Context(), auth.RegisterRequest{Username: "bob", Password: "correct-horse-battery"})
+	bob, err := service.Register(
+		t.Context(),
+		auth.RegisterRequest{Username: "bob", Password: "correct-horse-battery"},
+	)
 	require.NoError(t, err)
 
 	status, body := post(t, server, authapi.PathUpdateProfile, authapi.UpdateProfileRequest{
@@ -168,7 +191,10 @@ func TestSetupOpenClosesAfterTheFirstAccount(t *testing.T) {
 	require.NoError(t, json.Unmarshal(body, &open))
 	assert.True(t, open.Open)
 
-	_, err := service.Register(t.Context(), auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"})
+	_, err := service.Register(
+		t.Context(),
+		auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"},
+	)
 	require.NoError(t, err)
 
 	status, body = post(t, server, authapi.PathSetupOpen, authapi.Empty{})
@@ -181,7 +207,10 @@ func TestListUsersCarriesNoCredentials(t *testing.T) {
 	service := newService(t)
 	server := newServer(t, service)
 
-	_, err := service.Register(t.Context(), auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"})
+	_, err := service.Register(
+		t.Context(),
+		auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"},
+	)
 	require.NoError(t, err)
 
 	status, body := post(t, server, authapi.PathListUsers, authapi.ListUsersRequest{Limit: 10})
@@ -198,10 +227,18 @@ func TestDeleteUser(t *testing.T) {
 	service := newService(t)
 	server := newServer(t, service)
 
-	alice, err := service.Register(t.Context(), auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"})
+	alice, err := service.Register(
+		t.Context(),
+		auth.RegisterRequest{Username: "alice", Password: "correct-horse-battery"},
+	)
 	require.NoError(t, err)
 
-	status, body := post(t, server, authapi.PathDeleteUser, authapi.DeleteUserRequest{UserRef: alice.Ref()})
+	status, body := post(
+		t,
+		server,
+		authapi.PathDeleteUser,
+		authapi.DeleteUserRequest{UserRef: alice.Ref()},
+	)
 	require.Equal(t, http.StatusOK, status)
 	assert.JSONEq(t, `{}`, string(body))
 

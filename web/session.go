@@ -27,7 +27,12 @@ func (s *Server) withSession(next http.Handler) http.Handler {
 				// A failure to reach the identity service must never be read as "anonymous", so the
 				// request stops here.
 				s.logger.ErrorContext(r.Context(), "resolve session", slog.Any("error", err))
-				s.renderError(w, r, http.StatusServiceUnavailable, "Sign-in is unavailable right now.")
+				s.renderError(
+					w,
+					r,
+					http.StatusServiceUnavailable,
+					"Sign-in is unavailable right now.",
+				)
 
 				return
 			}
@@ -62,7 +67,12 @@ func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (*User, boo
 
 	if r.Method != http.MethodGet {
 		// A redirect would discard the submitted form, so tell the visitor instead of losing it.
-		s.renderError(w, r, http.StatusUnauthorized, "Your session has expired. Sign in again and retry.")
+		s.renderError(
+			w,
+			r,
+			http.StatusUnauthorized,
+			"Your session has expired. Sign in again and retry.",
+		)
 
 		return nil, false
 	}

@@ -73,7 +73,13 @@ func newHarness(t *testing.T) *harness {
 
 	hook := &recordingHook{}
 
-	service, err := auth.NewService(repository, passwords, hook, time.Hour, slog.New(slog.DiscardHandler))
+	service, err := auth.NewService(
+		repository,
+		passwords,
+		hook,
+		time.Hour,
+		slog.New(slog.DiscardHandler),
+	)
 	require.NoError(t, err)
 
 	h := &harness{db: db, hook: hook, registerable: func(string) bool { return true }}
@@ -150,7 +156,10 @@ func (h *harness) countSessions(t *testing.T) int {
 	t.Helper()
 
 	var count int
-	require.NoError(t, h.db.QueryRowContext(t.Context(), `SELECT count(*) FROM sessions`).Scan(&count))
+	require.NoError(
+		t,
+		h.db.QueryRowContext(t.Context(), `SELECT count(*) FROM sessions`).Scan(&count),
+	)
 
 	return count
 }
@@ -159,7 +168,11 @@ func (h *harness) passwordHash(t *testing.T, username string) string {
 	t.Helper()
 
 	var stored string
-	require.NoError(t, h.db.QueryRowContext(t.Context(), `SELECT password_hash FROM users WHERE username = ?`, username).Scan(&stored))
+	require.NoError(
+		t,
+		h.db.QueryRowContext(t.Context(), `SELECT password_hash FROM users WHERE username = ?`, username).
+			Scan(&stored),
+	)
 
 	return stored
 }
@@ -216,7 +229,10 @@ func TestLoginStoresOnlyTheHashOfTheSessionToken(t *testing.T) {
 	require.NotEmpty(t, token)
 
 	var storedHash string
-	require.NoError(t, h.db.QueryRowContext(t.Context(), `SELECT token_hash FROM sessions`).Scan(&storedHash))
+	require.NoError(
+		t,
+		h.db.QueryRowContext(t.Context(), `SELECT token_hash FROM sessions`).Scan(&storedHash),
+	)
 
 	assert.NotEqual(t, token, storedHash, "the token itself must not be stored")
 
@@ -228,14 +244,26 @@ func TestLoginRejectsBadCredentialsWithoutRevealingWhichPartWasWrong(t *testing.
 	h := newHarness(t)
 	require.Equal(t, http.StatusSeeOther, h.post(t, "/setup", setupForm()).StatusCode)
 
-	wrongPassword := h.post(t, "/login", url.Values{"username": {"ada"}, "password": {"wrong password"}})
+	wrongPassword := h.post(
+		t,
+		"/login",
+		url.Values{"username": {"ada"}, "password": {"wrong password"}},
+	)
 	require.Equal(t, http.StatusUnauthorized, wrongPassword.StatusCode)
 
-	unknownUser := h.post(t, "/login", url.Values{"username": {"grace"}, "password": {"wrong password"}})
+	unknownUser := h.post(
+		t,
+		"/login",
+		url.Values{"username": {"grace"}, "password": {"wrong password"}},
+	)
 	require.Equal(t, http.StatusUnauthorized, unknownUser.StatusCode)
 
-	assert.Equal(t, body(t, wrongPassword), strings.Replace(body(t, unknownUser), "grace", "ada", 1),
-		"the two failures must differ only in the username echoed back")
+	assert.Equal(
+		t,
+		body(t, wrongPassword),
+		strings.Replace(body(t, unknownUser), "grace", "ada", 1),
+		"the two failures must differ only in the username echoed back",
+	)
 }
 
 func TestLogoutRemovesTheSession(t *testing.T) {
@@ -254,21 +282,42 @@ func TestChangePasswordRotatesTheHashAndKeepsOnlyTheCurrentSession(t *testing.T)
 
 	// A second browser signs in as the same user.
 	other := newClient(t, h)
-	require.Equal(t, http.StatusSeeOther, other.post(t, "/login", url.Values{"username": {"ada"}, "password": {"correct horse"}}).StatusCode)
+	require.Equal(
+		t,
+		http.StatusSeeOther,
+		other.post(
+			t,
+			"/login",
+			url.Values{"username": {"ada"}, "password": {"correct horse"}},
+		).StatusCode,
+	)
 	require.Equal(t, 2, h.countSessions(t))
 
 	before := h.passwordHash(t, "ada")
 
-	wrongCurrent := h.post(t, "/password", url.Values{"current_password": {"not it"}, "new_password": {"a longer secret"}})
+	wrongCurrent := h.post(
+		t,
+		"/password",
+		url.Values{"current_password": {"not it"}, "new_password": {"a longer secret"}},
+	)
 	require.Equal(t, http.StatusBadRequest, wrongCurrent.StatusCode)
 	assert.Equal(t, before, h.passwordHash(t, "ada"))
 
-	changed := h.post(t, "/password", url.Values{"current_password": {"correct horse"}, "new_password": {"a longer secret"}})
+	changed := h.post(
+		t,
+		"/password",
+		url.Values{"current_password": {"correct horse"}, "new_password": {"a longer secret"}},
+	)
 	require.Equal(t, http.StatusSeeOther, changed.StatusCode)
 
 	assert.NotEqual(t, before, h.passwordHash(t, "ada"))
 	assert.Equal(t, 1, h.countSessions(t), "the other browser must be signed out")
-	assert.Equal(t, http.StatusOK, h.get(t, "/password").StatusCode, "this browser must stay signed in")
+	assert.Equal(
+		t,
+		http.StatusOK,
+		h.get(t, "/password").StatusCode,
+		"this browser must stay signed in",
+	)
 }
 
 // newClient gives the same server a second, independent browser.
@@ -283,7 +332,10 @@ func newClient(t *testing.T, h *harness) *harness {
 		db:           h.db,
 		hook:         h.hook,
 		registerable: h.registerable,
-		client:       &http.Client{Jar: jar, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }},
+		client: &http.Client{
+			Jar:           jar,
+			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		},
 	}
 }
 

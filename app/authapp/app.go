@@ -93,11 +93,19 @@ func (c *Config) Validate() error {
 
 	// bcrypt rejects costs outside [4, 31]; bounding here fails at boot rather than per login.
 	if c.BcryptCost < 10 || c.BcryptCost > 31 {
-		return fmt.Errorf("%w: AUTH_BCRYPT_COST must be between 10 and 31, got %d", errInvalidConfig, c.BcryptCost)
+		return fmt.Errorf(
+			"%w: AUTH_BCRYPT_COST must be between 10 and 31, got %d",
+			errInvalidConfig,
+			c.BcryptCost,
+		)
 	}
 
 	if c.SessionTTL <= 0 {
-		return fmt.Errorf("%w: AUTH_SESSION_TTL must be positive, got %s", errInvalidConfig, c.SessionTTL)
+		return fmt.Errorf(
+			"%w: AUTH_SESSION_TTL must be positive, got %s",
+			errInvalidConfig,
+			c.SessionTTL,
+		)
 	}
 
 	if c.AdminRole == "" {
@@ -130,7 +138,12 @@ func New(ctx context.Context, cfg *Config, logger *slog.Logger) (*Service, error
 	return &Service{db: db, service: service, routes: routes, logger: logger}, nil
 }
 
-func build(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logger) (*auth.Service, http.Handler, error) {
+func build(
+	ctx context.Context,
+	cfg *Config,
+	db *sql.DB,
+	logger *slog.Logger,
+) (*auth.Service, http.Handler, error) {
 	bcryptAlgorithm, err := hash.NewBcrypt(cfg.BcryptCost)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build bcrypt algorithm: %w", err)
@@ -159,10 +172,15 @@ func build(ctx context.Context, cfg *Config, db *sql.DB, logger *slog.Logger) (*
 		return nil, nil, fmt.Errorf("build auth service: %w", err)
 	}
 
-	pages, err := authui.NewHandler(service, registrationPolicy(cfg.RegistrationOpen, authzClient), authui.Config{
-		SessionCookieName: cfg.Cookie.Name,
-		SecureCookies:     cfg.Cookie.Secure,
-	}, logger)
+	pages, err := authui.NewHandler(
+		service,
+		registrationPolicy(cfg.RegistrationOpen, authzClient),
+		authui.Config{
+			SessionCookieName: cfg.Cookie.Name,
+			SecureCookies:     cfg.Cookie.Secure,
+		},
+		logger,
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("build auth handler: %w", err)
 	}
