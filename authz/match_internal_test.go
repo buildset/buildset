@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMatches(t *testing.T) {
@@ -46,7 +47,7 @@ func TestValidateResourceQuery(t *testing.T) {
 		"urn:auth:user:*",
 	}
 	for _, resource := range valid {
-		assert.NoError(t, validateResourceQuery(resource), resource)
+		require.NoError(t, validateResourceQuery(resource), resource)
 	}
 
 	invalid := []string{

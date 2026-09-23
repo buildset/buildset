@@ -35,7 +35,6 @@ linters:
     - perfsprint
     - revive
     - tagliatelle
-    - testifylint
     - testpackage
     - thelper
     - unparam

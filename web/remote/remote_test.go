@@ -1,7 +1,6 @@
 package remote_test
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -103,18 +102,18 @@ func TestResolveSessionOnlyReportsNotFoundWhenTheServiceSaidSo(t *testing.T) {
 			require.Error(t, err)
 
 			if test.wantKind == nil {
-				assert.False(t, errors.Is(err, web.ErrNotFound),
+				require.NotErrorIs(t, err, web.ErrNotFound,
 					"a failure must not look like a missing session: %v", err)
-				assert.False(t, errors.Is(err, web.ErrInvalidInput))
-				assert.False(t, errors.Is(err, web.ErrConflict))
+				require.NotErrorIs(t, err, web.ErrInvalidInput)
+				require.NotErrorIs(t, err, web.ErrConflict)
 
 				return
 			}
 
-			assert.ErrorIs(t, err, test.wantKind)
+			require.ErrorIs(t, err, test.wantKind)
 
 			var webErr *web.Error
-			require.True(t, errors.As(err, &webErr))
+			require.ErrorAs(t, err, &webErr)
 			assert.NotEmpty(
 				t,
 				webErr.Message,
@@ -131,7 +130,7 @@ func TestResolveSessionOnAnUnreachableServiceIsNotNotFound(t *testing.T) {
 	_, resolveErr := remote.NewAuth(client, remote.DefaultURLs()).
 		ResolveSession(t.Context(), "token")
 	require.Error(t, resolveErr)
-	assert.False(t, errors.Is(resolveErr, web.ErrNotFound))
+	assert.NotErrorIs(t, resolveErr, web.ErrNotFound)
 }
 
 func TestLoginURLKeepsTheRedirectOnThisSite(t *testing.T) {

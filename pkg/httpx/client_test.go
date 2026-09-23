@@ -2,7 +2,6 @@ package httpx_test
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -153,13 +152,13 @@ func TestCallOnlyReportsADomainErrorForAWellFormedEnvelope(t *testing.T) {
 			var domain *httpx.Error
 
 			if test.wantCode == "" {
-				assert.False(t, errors.As(err, &domain),
+				assert.NotErrorAs(t, err, &domain,
 					"a failure of the system must not decode as a domain error: %v", err)
 
 				return
 			}
 
-			require.True(t, errors.As(err, &domain), "want a domain error, got %v", err)
+			require.ErrorAs(t, err, &domain, "want a domain error, got %v", err)
 			assert.Equal(t, test.wantCode, domain.Code)
 			assert.NotEmpty(t, domain.Message)
 		})
@@ -179,9 +178,10 @@ func TestCallReportsAnUnreachableServiceAsAFailure(t *testing.T) {
 	require.Error(t, callErr)
 
 	var domain *httpx.Error
-	assert.False(
+	assert.NotErrorAs(
 		t,
-		errors.As(callErr, &domain),
+		callErr,
+		&domain,
 		"an unreachable service must not look like an answer",
 	)
 }
@@ -207,7 +207,7 @@ func TestCallReportsACancelledContextAsAFailure(t *testing.T) {
 	require.Error(t, err)
 
 	var domain *httpx.Error
-	assert.False(t, errors.As(err, &domain))
+	assert.NotErrorAs(t, err, &domain)
 }
 
 func TestCallForwardsTheRequestID(t *testing.T) {
@@ -242,7 +242,7 @@ func TestWriteErrorProducesADecodableEnvelope(t *testing.T) {
 	err := client.Call(t.Context(), "/v1/echo", echoRequest{}, &echoResponse{})
 
 	var domain *httpx.Error
-	require.True(t, errors.As(err, &domain))
+	require.ErrorAs(t, err, &domain)
 	assert.Equal(t, httpx.CodeConflict, domain.Code)
 	assert.Equal(t, "That username is already taken.", domain.Message)
 }

@@ -26,7 +26,7 @@ func TestErrorCarriesContextButDoesNotLeakIt(t *testing.T) {
 	require.Error(t, err)
 
 	// errors.Is still works, which every Classify and web/session.go depends on.
-	assert.ErrorIs(t, err, auth.ErrUserNotFound)
+	require.ErrorIs(t, err, auth.ErrUserNotFound)
 
 	// The id is in the error, so a log line names the record that was missing.
 	assert.Contains(t, err.Error(), "01a0-missing-id")
