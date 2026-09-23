@@ -3,7 +3,6 @@ package httpx
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -68,5 +67,5 @@ func WriteInternal(
 ) {
 	logger.ErrorContext(ctx, operation, slog.Any("error", err))
 
-	http.Error(w, fmt.Sprintf("%s failed", operation), http.StatusInternalServerError)
+	http.Error(w, operation+" failed", http.StatusInternalServerError)
 }

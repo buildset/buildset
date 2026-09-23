@@ -30,7 +30,6 @@ linters:
     - noctx
     - noinlineerr
     - paralleltest
-    - perfsprint
     - revive
     - tagliatelle
     - testpackage
