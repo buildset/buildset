@@ -11,8 +11,8 @@ import (
 // does not advertise the route. It returns the signed-in visitor, if there is one: an administrator
 // here is adding somebody else's account, not signing themselves up.
 func (h *Handler) registrationGate(w http.ResponseWriter, r *http.Request) (*auth.User, bool) {
-	actor, err := h.currentUser(r)
-	if err != nil {
+	_, actor, err := h.currentSession(r)
+	if err != nil && !errors.Is(err, auth.ErrSessionNotFound) {
 		h.renderInternalError(w, r, err, "resolve session")
 
 		return nil, false

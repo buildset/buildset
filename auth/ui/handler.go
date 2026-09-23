@@ -146,20 +146,6 @@ func (h *Handler) startSession(w http.ResponseWriter, r *http.Request, user *aut
 	return nil
 }
 
-// An absent or expired session gives a nil user and no error.
-func (h *Handler) currentUser(r *http.Request) (*auth.User, error) {
-	_, user, err := h.currentSession(r)
-	if err != nil {
-		if errors.Is(err, auth.ErrSessionNotFound) {
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	return user, nil
-}
-
 // An absent or expired session is not an error here; the caller decides what to do about it.
 func (h *Handler) currentSession(r *http.Request) (*auth.Session, *auth.User, error) {
 	token := h.sessionToken(r)
