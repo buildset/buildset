@@ -27,7 +27,6 @@ linters:
     - lll
     - maintidx
     - mnd
-    - noctx
     - noinlineerr
     - paralleltest
     - revive

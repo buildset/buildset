@@ -100,7 +100,7 @@ func (a *Application) SweepExpiredSessions(ctx context.Context) {
 }
 
 func Run(ctx context.Context) error {
-	cfg, err := LoadConfig()
+	cfg, err := LoadConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}

@@ -41,7 +41,7 @@ type Config struct {
 	URLs remote.URLs
 }
 
-func LoadConfig() (*Config, error) {
+func LoadConfig(ctx context.Context) (*Config, error) {
 	log, err := config.LoadLog()
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func LoadConfig() (*Config, error) {
 		*target = value
 	}
 
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.Validate(ctx); err != nil {
 		return nil, err
 	}
 
@@ -90,8 +90,8 @@ func loadURLs() remote.URLs {
 	}
 }
 
-func (c *Config) Validate() error {
-	if err := c.Server.Validate(); err != nil {
+func (c *Config) Validate(ctx context.Context) error {
+	if err := c.Server.Validate(ctx); err != nil {
 		return err
 	}
 
@@ -147,7 +147,7 @@ func New(cfg *Config, logger *slog.Logger) (*Site, error) {
 func (s *Site) Routes() http.Handler { return s.routes }
 
 func Run(ctx context.Context) error {
-	cfg, err := LoadConfig()
+	cfg, err := LoadConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}

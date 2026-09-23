@@ -95,7 +95,10 @@ func Open(t *testing.T, dsn string) *sql.DB {
 		defer func() { _ = cleanup.Close() }()
 
 		// t.Context is already cancelled by the time cleanups run, so this uses its own.
-		if _, err := cleanup.Exec(`DROP SCHEMA ` + schema + ` CASCADE`); err != nil {
+		if _, err := cleanup.ExecContext(
+			context.Background(),
+			`DROP SCHEMA `+schema+` CASCADE`,
+		); err != nil {
 			t.Logf("drop schema %s: %v", schema, err)
 		}
 	})

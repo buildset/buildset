@@ -81,9 +81,14 @@ func (h *harness) request(
 	var request *http.Request
 
 	if form == nil {
-		request = httptest.NewRequest(method, target, nil)
+		request = httptest.NewRequestWithContext(t.Context(), method, target, nil)
 	} else {
-		request = httptest.NewRequest(method, target, strings.NewReader(form.Encode()))
+		request = httptest.NewRequestWithContext(
+			t.Context(),
+			method,
+			target,
+			strings.NewReader(form.Encode()),
+		)
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 

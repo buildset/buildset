@@ -55,14 +55,25 @@ func loadDotEnv() {
 // Healthcheck asks this process's own readiness probe, loading the server settings the same way the
 // server does so the two cannot disagree about where to look.
 func Healthcheck() error {
-	port, err := config.LoadServer().ResolvePort()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	port, err := config.LoadServer().ResolvePort(ctx)
 	if err != nil {
 		return err
 	}
 
-	client := &http.Client{Timeout: 2 * time.Second}
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		"http://127.0.0.1:"+port+"/readyz",
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("build readyz request: %w", err)
+	}
 
-	response, err := client.Get("http://127.0.0.1:" + port + "/readyz")
+	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return fmt.Errorf("probe readyz: %w", err)
 	}

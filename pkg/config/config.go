@@ -4,6 +4,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -45,8 +46,8 @@ func (s Server) Address() string {
 
 // ResolvePort resolves a service name in PORT to a number. A URL authority may not contain a
 // service name, so anything building one needs this rather than Port.
-func (s Server) ResolvePort() (string, error) {
-	port, err := net.LookupPort("tcp", s.Port)
+func (s Server) ResolvePort(ctx context.Context) (string, error) {
+	port, err := net.DefaultResolver.LookupPort(ctx, "tcp", s.Port)
 	if err != nil {
 		return "", fmt.Errorf("resolve PORT %q: %w", s.Port, err)
 	}
@@ -54,8 +55,8 @@ func (s Server) ResolvePort() (string, error) {
 	return strconv.Itoa(port), nil
 }
 
-func (s Server) Validate() error {
-	if _, err := s.ResolvePort(); err != nil {
+func (s Server) Validate(ctx context.Context) error {
+	if _, err := s.ResolvePort(ctx); err != nil {
 		return err
 	}
 

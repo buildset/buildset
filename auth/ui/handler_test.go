@@ -120,7 +120,10 @@ func newHarness(t *testing.T) *harness {
 func (h *harness) get(t *testing.T, path string) *http.Response {
 	t.Helper()
 
-	response, err := h.client.Get(h.server.URL + path)
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, h.server.URL+path, nil)
+	require.NoError(t, err)
+
+	response, err := h.client.Do(request)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = response.Body.Close() })
 
@@ -130,7 +133,17 @@ func (h *harness) get(t *testing.T, path string) *http.Response {
 func (h *harness) post(t *testing.T, path string, form url.Values) *http.Response {
 	t.Helper()
 
-	response, err := h.client.PostForm(h.server.URL+path, form)
+	request, err := http.NewRequestWithContext(
+		t.Context(),
+		http.MethodPost,
+		h.server.URL+path,
+		strings.NewReader(form.Encode()),
+	)
+	require.NoError(t, err)
+
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	response, err := h.client.Do(request)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = response.Body.Close() })
 

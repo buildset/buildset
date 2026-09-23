@@ -52,8 +52,17 @@ func post(t *testing.T, server *httptest.Server, path string, request any) (int,
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	response, err := server.Client().
-		Post(server.URL+path, "application/json", bytes.NewReader(body))
+	httpRequest, err := http.NewRequestWithContext(
+		t.Context(),
+		http.MethodPost,
+		server.URL+path,
+		bytes.NewReader(body),
+	)
+	require.NoError(t, err)
+
+	httpRequest.Header.Set("Content-Type", "application/json")
+
+	response, err := server.Client().Do(httpRequest)
 	require.NoError(t, err)
 	defer func() { _ = response.Body.Close() }()
 
@@ -169,8 +178,17 @@ func TestGrantAndPurgeRoundTrip(t *testing.T) {
 func TestUnreadableBodyIsTheCallersFault(t *testing.T) {
 	server := newServer(t)
 
-	response, err := server.Client().
-		Post(server.URL+authzapi.PathCan, "application/json", bytes.NewReader([]byte("{not json")))
+	httpRequest, err := http.NewRequestWithContext(
+		t.Context(),
+		http.MethodPost,
+		server.URL+authzapi.PathCan,
+		bytes.NewReader([]byte("{not json")),
+	)
+	require.NoError(t, err)
+
+	httpRequest.Header.Set("Content-Type", "application/json")
+
+	response, err := server.Client().Do(httpRequest)
 	require.NoError(t, err)
 	defer func() { _ = response.Body.Close() }()
 
